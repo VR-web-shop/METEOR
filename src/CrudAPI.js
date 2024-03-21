@@ -199,4 +199,22 @@ export default class CrudAPI {
             };
         }
     }
+
+    static buildOptions(options={}, auth=false) {
+        const apiOptions = {}
+
+        if (options.authorization) apiOptions.authorization = options.authorization
+        if (options.find) apiOptions.find = { auth }
+        if (options.findAll) apiOptions.findAll = { auth }
+        if (options.create) apiOptions.create = { auth, 
+            properties: apiOptions.create.properties 
+        }
+        if (options.update) apiOptions.update = { auth, 
+            properties: apiOptions.update.properties, 
+            requiredProperties: apiOptions.update.requiredProperties 
+        }
+        if (options.delete) apiOptions.delete = { auth }
+        
+        return apiOptions;
+    }
 }

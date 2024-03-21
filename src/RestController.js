@@ -276,21 +276,8 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
      * @example const api = generateCrudAPI('http://localhost:3000', { storage: 'memory', token: 'YOUR_TOKEN' });
      */
     const generateCrudAPI = (serverURL, authorization=null) => {
-        const options = { authorization };
-        const auth = authorization !== null;
-
-        if (options.find) options.find = { auth }
-        if (options.findAll) options.findAll = { auth }
-        if (options.create) options.create = { auth, 
-            properties: options.create.properties 
-        }
-        if (options.update) options.update = { auth, 
-            properties: options.update.properties, 
-            requiredProperties: options.update.requiredProperties 
-        }
-        if (options.delete) options.delete = { auth }
-        
-        return new CrudAPI(serverURL, endpoint, pkName, options);
+        const apiOptions = CrudAPI.buildOptions({ authorization, ...options }, authorization !== null);
+        return new CrudAPI(serverURL, endpoint, pkName, apiOptions);
     }
 
     return {router, service, generateCrudAPI};
