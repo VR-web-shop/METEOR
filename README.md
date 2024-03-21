@@ -19,12 +19,12 @@ METEOR is a powerful npm package that simplifies the process of building RESTful
 
 Install via terminal:
 ```
-$ npm install @vr-web-shop/meteor@1.0.10
+$ npm install @vr-web-shop/meteor@1.0.12
 ```
 
 Install via package.json:
 ```
-"@vr-web-shop/meteor": "1.0.10"
+"@vr-web-shop/meteor": "1.0.12"
 ```
 
 Find the latest version at https://github.com/VR-web-shop/METEOR/pkgs/npm/meteor
