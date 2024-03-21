@@ -1,4 +1,5 @@
-# METEOR (Model Express Toolkit for Efficient ORM REST-APIs) ☄️
+# METEOR ☄️
+(Model Express Toolkit for Efficient ORM REST-APIs) ☄️
 
 METEOR is a powerful npm package that simplifies the process of building RESTful APIs with Express.js and Sequelize ORM. With METEOR, you can quickly generate complete code for your API endpoints, making API development faster and more efficient.
 
