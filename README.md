@@ -3,6 +3,8 @@
 
 METEOR is a powerful npm package that simplifies the process of building RESTful APIs with Express.js and Sequelize ORM. With METEOR, you can quickly generate complete code for your API endpoints, making API development faster and more efficient.
 
+[![Node.js Package Publish](https://github.com/VR-web-shop/METEOR/actions/workflows/npm-publish-github-packages.yml/badge.svg)](https://github.com/VR-web-shop/METEOR/actions/workflows/npm-publish-github-packages.yml)
+
 ## Features
 
 - **Streamlined API Development**: METEOR provides a single method that automates the generation of most of the code required for setting up Express routes with your Sequelize models, reducing the time and effort needed to build APIs.
