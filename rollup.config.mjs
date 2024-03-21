@@ -3,8 +3,8 @@
 export default {
 	input: './index.js',
 	output: {
-		file: './dist/bundle.mjs',
-		format: 'mjs'
+		file: './dist/bundle.js',
+		format: 'es'
 	},
 	external: ['express']
 };

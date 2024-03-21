@@ -3,7 +3,7 @@
     "version": "1.0.9",
     "description": "",
     "type": "module",
-    "main": "/dist/bundle.mjs",
+    "main": "/dist/bundle.js",
     "files": [
         "/dist"
     ],
