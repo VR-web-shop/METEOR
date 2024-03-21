@@ -15,6 +15,20 @@ METEOR is a powerful npm package that simplifies the process of building RESTful
   
 - **Efficient Performance**: Designed with efficiency in mind, METEOR optimizes API performance and scalability, ensuring that your applications can handle high loads and respond quickly to requests.
 
+## Installation
+
+Install via terminal:
+```
+$ npm install @vr-web-shop/meteor@1.0.6
+```
+
+Install via package.json:
+```
+"@vr-web-shop/meteor": "1.0.6"
+```
+
+Find the latest version at https://github.com/VR-web-shop/METEOR/pkgs/npm/meteor
+
 ## Usage
 Instantiate a new RestController with the options you need.
 ```js
