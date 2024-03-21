@@ -207,11 +207,11 @@ export default class CrudAPI {
         if (options.find) apiOptions.find = { auth }
         if (options.findAll) apiOptions.findAll = { auth }
         if (options.create) apiOptions.create = { auth, 
-            properties: apiOptions.create.properties 
+            properties: options.create.properties 
         }
         if (options.update) apiOptions.update = { auth, 
-            properties: apiOptions.update.properties, 
-            requiredProperties: apiOptions.update.requiredProperties 
+            properties: options.update.properties, 
+            requiredProperties: options.update.requiredProperties 
         }
         if (options.delete) apiOptions.delete = { auth }
         
