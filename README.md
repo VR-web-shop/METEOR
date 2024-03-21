@@ -32,6 +32,8 @@ Find the latest version at https://github.com/VR-web-shop/METEOR/pkgs/npm/meteor
 ## Usage
 Instantiate a new RestController with the options you need.
 ```js
+import RestController from "@vr-web-shop/meteor";
+
 const controller = RestController(endpoint: string, foreign_key_name: string, model: SequelizeModel {
     
     // Not providing a find options, means neither a route or service method will be generated.
@@ -126,7 +128,9 @@ const { router, service } = controller;
 ```
 
 ## Example
+Create the API for a resource called `Material` and a belong-through association called `Texture`.
 ```js
+import RestController from "@vr-web-shop/meteor";
 import express from 'express'
 
 // This should be a model defined with Sequelize (https://sequelize.org/)
