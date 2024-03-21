@@ -3,7 +3,7 @@
     "version": "1.0.8",
     "description": "",
     "type": "module",
-    "main": "/dist/bundle.cjs",
+    "main": "/dist/bundle.mjs",
     "files": [
         "/dist"
     ],
