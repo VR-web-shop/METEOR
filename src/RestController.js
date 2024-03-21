@@ -1,3 +1,4 @@
+import CrudAPI from './CrudAPI.js';
 import ApiRequestError from './ApiRequestError.js';
 import CrudService from './CrudService.js';
 import express from 'express';
@@ -265,7 +266,34 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
             });
     }
 
-    return {router, service};
+    /**
+     * @function generateCrudAPI
+     * @description Generates a CRUD API for the given endpoint.
+     * @param {string} serverURL - The URL of the server.
+     * @param {string} authorization - The authorization token to use for the API.
+     * @returns {CrudAPI} The generated CRUD API.
+     * @example const api = generateCrudAPI('http://localhost:3000', { storage: 'localStorage', key: 'auth' });
+     * @example const api = generateCrudAPI('http://localhost:3000', { storage: 'memory', token: 'YOUR_TOKEN' });
+     */
+    const generateCrudAPI = (serverURL, authorization=null) => {
+        const options = { authorization };
+        const auth = authorization !== null;
+
+        if (options.find) options.find = { auth }
+        if (options.findAll) options.findAll = { auth }
+        if (options.create) options.create = { auth, 
+            properties: options.create.properties 
+        }
+        if (options.update) options.update = { auth, 
+            properties: options.update.properties, 
+            requiredProperties: options.update.requiredProperties 
+        }
+        if (options.delete) options.delete = { auth }
+        
+        return new CrudAPI(serverURL, endpoint, pkName, options);
+    }
+
+    return {router, service, generateCrudAPI};
 }
 
 export default RestController;

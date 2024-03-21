@@ -22,7 +22,7 @@ import ApiRequestError from './ApiRequestError.js';
  *      requiredProperties: ['uuid'], 
  *      dto: ['uuid', 'name'] 
  *    },
- *    destroy: true
+ *    delete: true
  * });
  */
 export default class CrudService {

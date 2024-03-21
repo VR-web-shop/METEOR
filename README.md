@@ -30,11 +30,22 @@ Install via package.json:
 Find the latest version at https://github.com/VR-web-shop/METEOR/pkgs/npm/meteor
 
 ## Usage
-Instantiate a new RestController with the options you need.
-```js
-import RestController from "@vr-web-shop/meteor";
+The package provides three important classes `RestController`, `CrudService`, and `CrudAPI`.
 
-const controller = RestController(endpoint: string, foreign_key_name: string, model: SequelizeModel {
+### RestController
+RestController can be used to generate an API to read and write data from Sequelize models.
+The method depends returns an `Express Router` object, a `CrudService` object (Internal class), and a method called `generateCrudAPI`. 
+
+- The `Express Router` object can be passed to an instance of an Express application to enable the routes on the application.
+
+- `CrudService` can be used to read and write to the database using the generated service layer directly.
+
+- `generateCrudAPI` can be used to create an instance of `CrudAPI` (Internal class), which contains a layer of methods calling the express routes using the `fetch` method.
+
+```js
+import { RestController } from "@vr-web-shop/meteor";
+
+const controller = RestController(endpoint: string, foreign_key_name: string, model: SequelizeModel, {
     
     // Not providing a find options, means neither a route or service method will be generated.
     find: { 
@@ -122,15 +133,16 @@ const controller = RestController(endpoint: string, foreign_key_name: string, mo
     }
 });
 
-// You now have access to an Express router containing the defined routes, and a service instance
-// where you can call the methods directly without using the API routes.
-const { router, service } = controller;
+// You now have access to an Express router containing the defined routes, a service instance
+// where you can call the methods directly without using the API routes, and a method to
+// generate a fetch API for the routes for your frontend.
+const { router, service, generateCrudAPI } = controller;
 ```
 
-## Example
+### Example
 Create the API for a resource called `Material` and a belong-through association called `Texture`.
 ```js
-import RestController from "@vr-web-shop/meteor";
+import { RestController } from "@vr-web-shop/meteor";
 import express from 'express'
 
 // This should be a model defined with Sequelize (https://sequelize.org/)
@@ -143,6 +155,8 @@ const controller = RestController(`api/v1/materials`, 'uuid', Material, {
     update: { properties: [ 'name', 'description', 'material_type_name' ], middleware: [] },
     delete: { middleware: [] }
 })
+
+const { router, service, generateCrudAPI } = controller;
 
 // Add the routes to the server
 const app = express();
@@ -176,4 +190,202 @@ app.listen(3000, () => console.log('Running on port 3000'))
  *  uuid: string
  * }
  */
+
+// If you also wanted an API to fetch your routes from the frontend,
+// use the generateCrudAPI function returned from the RestController function.
+const materialsFetchAPI = generateCrudAPI("http://localhost:3000", {storage: 'memory', token: 'YOUR_TOKEN'});
+materialsFetchAPI.find({uuid: 1}, {include: 'Texture'})
+materialsFetchAPI.findAll({limit: 5, page: 1, include: 'Texture'})
+materialsFetchAPI.create({ name: 'Red Fabric', description: 'Some description ...', material_type_name: 'MeshBasicMaterial'})
+materialsFetchAPI.update({ uuid: 2, name: 'New Name', description: 'New description ...', material_type_name: 'MeshPhysicalMaterial'})
+materialsFetchAPI.destroy({ uuid: 2 })
+
+```
+
+### CrudService
+The `CrudService` class can be used to generate a service layer for a Sequelize model. The class has the following public methods:
+
+- `find(params, methodOptions)` - Find a single record of the model.
+- `findAll(params, methodOptions)` - Paginate or search the model.
+- `create(params)` - Create a new record of the model.
+- `update(params)` - Update an record of the model.
+- `destroy(params)` - Delete an record of the model.
+
+```js
+import { CrudService } from "@vr-web-shop/meteor";
+
+const service = new CrudService(model: SequelizeModel, foreign_key_name: string, {
+
+    // Not providing the find option will not create the find method
+    find: { 
+        dto: string[] 
+    },
+    
+    // Not providing the findAll option will not create the findAll method
+    findAll: {
+        searchProperties: string[],
+        defaultLimit: number,
+        defaultPage: number,
+        dto: string[]
+    },
+
+    // Not providing the create option will not create the create method
+    create: {
+        properties: string[],
+        dto: string[]
+    },
+
+    // Not providing the update option will not create the update method
+    update: {
+        properties: string[],
+        requiredProperties: string[],
+        dto: string[]
+    },
+
+    // Not providing the destroy option will not create the destroy method
+    delete: boolean
+
+});
+
+```
+
+### Example
+Create a service class for a resource called `Material` and a belong-through association called `Texture`.
+```js
+import { CrudService } from "@vr-web-shop/meteor";
+
+// This should be a model defined with Sequelize (https://sequelize.org/)
+import Material from './models/Material.js'
+
+const service = new CrudService(Material, 'uuid', {
+    find: { dto: [ 'name', 'description', 'material_type_name' ] },
+    findAll: { dto: [ 'name', 'description', 'material_type_name' ] },
+    create: { properties: [ 'name', 'description', 'material_type_name' ] },
+    update: { properties: [ 'name', 'description', 'material_type_name' ] },
+    delete: true
+})
+
+// Find material
+const material = service.find({uuid: '...'}, {include: 'Texture'})
+
+// Paginate materials
+const {count, rows, pages} = service.findAll({limit: 5, page: 1}, {include: 'Texture'})
+
+// Create material
+service.create({name: 'Red fabric', description: 'Some description...', material_type_name: 'MeshBasicMaterial'})
+
+// Update material
+service.update({uuid: '...', description: 'new description'})
+
+// Delete material
+service.delete({uuid: '...'})
+```
+
+### CrudAPI
+The `CrudAPI` class can be used to generate methods for the API for the frontend. The class has the following public methods:
+- `setAuthorizationOptions(newOptions)` - Set the authorization options to something else after instantiation.
+- `find(params, methodOptions)` - Paginate or search the model.
+- `findAll(params)` - Paginate or search the model.
+- `create(params)` - Create a new record of the model.
+- `update(params)` - Update an record of the model.
+- `destroy(params)` - Delete an record of the model.
+
+```js
+import { CrudAPI } from "@vr-web-shop/meteor";
+
+const fetchAPI = new CrudAPI(serverURL: string, endpoint: string, foreignKeyName: string, {
+
+    // Optional, use it if you the endpoint require authentication.
+    authorization: {
+        /**
+         * Two types of authorization token is supported:
+         * - 'localStorage' - Tells the system to get the token from localStorage (only works in the browser)
+         * - 'memory' - Tells the system to store the token in a variable until the instance is destroyed.
+         */
+        storage: string,
+
+        // Specify the key where the token is stored in local storage in the browser. Use together with the 'localStorage' storage option.
+        key: string
+
+        // Specify the token that should be stored in memory. Use together with the 'memory' storage option. 
+        token: string
+    },
+
+    // Not providing the delete option will not create the delete method
+    find: {
+
+        // Define if the authorization header should be provided.
+        auth: boolean
+    },
+
+    // Not providing the delete option will not create the delete method
+    findAll: {
+
+        // Define if the authorization header should be provided.
+        auth: boolean
+    },
+
+    // Not providing the delete option will not create the delete method
+    create: {
+
+        // Define if the authorization header should be provided.
+        auth: boolean,
+
+        // Define the properties that should be included in the request.
+        properties: string[],
+    },
+
+    // Not providing the delete option will not create the delete method
+    update: {
+
+        // Define if the authorization header should be provided.
+        auth: boolean,
+
+        // Define the optional properties that should be included in the request.
+        properties: string[],
+
+        // Define the required properties that should be included in the request.
+        requiredProperties: string[]
+    },
+
+    // Not providing the delete option will not create the delete method
+    delete: {
+        // Define if the authorization header should be provided.
+        auth: boolean
+    }
+});
+
+```
+
+### Example
+Create a `CrudAPI` class for a resource called `Material`.
+```js
+import { CrudAPI } from "@vr-web-shop/meteor";
+
+const api = new CrudAPI('http://localhost:3000', '/api/v1/materials', 'uuid', {
+    authorization: { storage: 'localStorage', key: 'auth' },
+    find: { auth: true },
+    findAll: { auth: true },
+    create: { auth: true, properties: ['name', 'email'] },
+    update: { auth: true, properties: ['name', 'email'] },
+    delete: { auth: true }
+})
+
+// Change authorization method
+api.setAuthorizationOptions({ storage: 'memory', token: 'YOUR_TOKEN' })
+
+// Find material
+const material = api.find({uuid: '...'}, {include: 'textures'})
+
+// Paginate materials
+const {count, rows, pages} = api.findAll({limit: 5, page: 1}, {include: 'Texture'})
+
+// Create material
+api.create({name: 'Red fabric', description: 'Some description...', material_type_name: 'MeshBasicMaterial'})
+
+// Update material
+api.update({uuid: '...', description: 'new description'})
+
+// Delete material
+api.delete({uuid: '...'})
 ```
