@@ -19,12 +19,12 @@ METEOR is a powerful npm package that simplifies the process of building RESTful
 
 Install via terminal:
 ```
-$ npm install @vr-web-shop/meteor@1.0.7
+$ npm install @vr-web-shop/meteor@1.0.10
 ```
 
 Install via package.json:
 ```
-"@vr-web-shop/meteor": "1.0.7"
+"@vr-web-shop/meteor": "1.0.10"
 ```
 
 Find the latest version at https://github.com/VR-web-shop/METEOR/pkgs/npm/meteor
@@ -43,9 +43,9 @@ The method depends returns an `Express Router` object, a `CrudService` object (I
 - `generateCrudAPI` can be used to create an instance of `CrudAPI` (Internal class), which contains a layer of methods calling the express routes using the `fetch` method.
 
 ```js
-import { RestController } from "@vr-web-shop/meteor";
+import meteor from "@vr-web-shop/meteor";
 
-const controller = RestController(endpoint: string, foreign_key_name: string, model: SequelizeModel, {
+const controller = meteor.RestController(endpoint: string, foreign_key_name: string, model: SequelizeModel, {
     
     // Not providing a find options, means neither a route or service method will be generated.
     find: { 
@@ -142,13 +142,13 @@ const { router, service, generateCrudAPI } = controller;
 ### Example
 Create the API for a resource called `Material` and a belong-through association called `Texture`.
 ```js
-import { RestController } from "@vr-web-shop/meteor";
+import meteor from "@vr-web-shop/meteor";
 import express from 'express'
 
 // This should be a model defined with Sequelize (https://sequelize.org/)
 import Material from './models/Material.js'
 
-const controller = RestController(`api/v1/materials`, 'uuid', Material, {
+const controller = meteor.RestController(`api/v1/materials`, 'uuid', Material, {
     find: { includes: [{ endpoint: 'textures', model: 'Texture' }], middleware: [] },
     findAll: { includes: [ 'Texture' ], middleware: [] },
     create: { properties: [ 'name', 'description', 'material_type_name' ], middleware: [] },
@@ -212,9 +212,9 @@ The `CrudService` class can be used to generate a service layer for a Sequelize 
 - `destroy(params)` - Delete an record of the model.
 
 ```js
-import { CrudService } from "@vr-web-shop/meteor";
+import meteor from "@vr-web-shop/meteor";
 
-const service = new CrudService(model: SequelizeModel, foreign_key_name: string, {
+const service = new meteor.CrudService(model: SequelizeModel, foreign_key_name: string, {
 
     // Not providing the find option will not create the find method
     find: { 
@@ -252,12 +252,12 @@ const service = new CrudService(model: SequelizeModel, foreign_key_name: string,
 ### Example
 Create a service class for a resource called `Material` and a belong-through association called `Texture`.
 ```js
-import { CrudService } from "@vr-web-shop/meteor";
+import meteor from "@vr-web-shop/meteor";
 
 // This should be a model defined with Sequelize (https://sequelize.org/)
 import Material from './models/Material.js'
 
-const service = new CrudService(Material, 'uuid', {
+const service = new meteor.CrudService(Material, 'uuid', {
     find: { dto: [ 'name', 'description', 'material_type_name' ] },
     findAll: { dto: [ 'name', 'description', 'material_type_name' ] },
     create: { properties: [ 'name', 'description', 'material_type_name' ] },
@@ -291,9 +291,9 @@ The `CrudAPI` class can be used to generate methods for the API for the frontend
 - `destroy(params)` - Delete an record of the model.
 
 ```js
-import { CrudAPI } from "@vr-web-shop/meteor";
+import meteor from "@vr-web-shop/meteor";
 
-const fetchAPI = new CrudAPI(serverURL: string, endpoint: string, foreignKeyName: string, {
+const fetchAPI = new meteor.CrudAPI(serverURL: string, endpoint: string, foreignKeyName: string, {
 
     // Optional, use it if you the endpoint require authentication.
     authorization: {
@@ -360,9 +360,9 @@ const fetchAPI = new CrudAPI(serverURL: string, endpoint: string, foreignKeyName
 ### Example
 Create a `CrudAPI` class for a resource called `Material`.
 ```js
-import { CrudAPI } from "@vr-web-shop/meteor";
+import meteor from "@vr-web-shop/meteor";
 
-const api = new CrudAPI('http://localhost:3000', '/api/v1/materials', 'uuid', {
+const api = new meteor.CrudAPI('http://localhost:3000', '/api/v1/materials', 'uuid', {
     authorization: { storage: 'localStorage', key: 'auth' },
     find: { auth: true },
     findAll: { auth: true },
