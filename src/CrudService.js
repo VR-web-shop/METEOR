@@ -71,24 +71,29 @@ export default class CrudService {
 
                 let includeModels;
                 if (methodOptions.include) {
+                    const associations = Object.values(Model.associations);
                     const includeArray = methodOptions.include.split(',');
-                    for (let i = 0; i < includeArray.length; i++) {
+                    for (let i = 0; i < includeArray.length; i++) {                        
                         const includeModel = includeArray[i];
                         const subIncludes = includeModel.split('.');
 
                         if (subIncludes.length > 1) {
                             const subIncludesArray = subIncludes[1].split(':');
+                            const parentModelInstance = associations.find(a => a.as === subIncludes[0]);
+                            const parentModelInstanceAssociations = Object.values(parentModelInstance.target.associations);
+                            const childModelInstances = parentModelInstanceAssociations.filter(a => subIncludesArray.includes(a.as));
                             includeArray[i] = {
-                                model: subIncludes[0],
-                                include: subIncludesArray
+                                model: parentModelInstance,
+                                include: childModelInstances
                             };
                         } else {
-                            includeArray[i] = { model: includeModel };
+                            const parentModelInstance = associations.find(a => a.as === includeModel);
+                            includeArray[i] = { model: parentModelInstance };
                         }              
                     }
                     includeModels = includeArray;
-
-                    const associations = Object.values(Model.associations);
+                    console.log(includeModels);
+                    
                     for (let includeModel of includeModels) {
                         if (!associations.find(a => a.as === includeModel.model)) {
                             throw new ApiRequestError(`No association found with name ${includeModel.model}. Possible associations are: ${associations.map(a => a.as).join(', ')};`, 400);
