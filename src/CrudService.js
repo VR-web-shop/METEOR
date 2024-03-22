@@ -71,12 +71,26 @@ export default class CrudService {
 
                 let includeModels;
                 if (methodOptions.include) {
-                    includeModels = methodOptions.include.split(',');
+                    const includeArray = methodOptions.include.split(',');
+                    for (let i = 0; i < includeArray.length; i++) {
+                        const includeModel = includeArray[i];
+                        const subIncludes = includeModel.split('.');
+
+                        if (subIncludes.length > 1) {
+                            const subIncludesArray = subIncludes[1].split(':');
+                            includeArray[i] = {
+                                model: subIncludes[0],
+                                include: subIncludesArray
+                            };
+                        } else {
+                            includeArray[i] = { model: includeModel };
+                        }                        
+                    }
 
                     const associations = Object.values(Model.associations);
                     for (let includeModel of includeModels) {
-                        if (!associations.find(a => a.as === includeModel)) {
-                            throw new ApiRequestError(`No association found with name ${includeModel}. Possible associations are: ${associations.map(a => a.as).join(', ')};`, 400);
+                        if (!associations.find(a => a.as === includeModel.model)) {
+                            throw new ApiRequestError(`No association found with name ${includeModel.model}. Possible associations are: ${associations.map(a => a.as).join(', ')};`, 400);
                         }
                     }
                 }
