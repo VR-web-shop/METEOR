@@ -81,6 +81,7 @@ export default class CrudService {
                             const subIncludesArray = subIncludes[1].split(':');
                             const parentModelInstance = associations.find(a => a.as === subIncludes[0]);
                             const parentModelInstanceAssociations = Object.values(parentModelInstance.target.associations);
+                            console.log("parentModelInstanceAssociations", parentModelInstanceAssociations);
                             const childModelInstances = parentModelInstanceAssociations.filter(a => subIncludesArray.includes(a.as));
                             includeArray[i] = {
                                 model: parentModelInstance,
@@ -92,13 +93,8 @@ export default class CrudService {
                         }              
                     }
                     includeModels = includeArray;
-                    console.log(includeModels);
+                    console.log("includeModels", includeModels);
                     
-                    for (let includeModel of includeModels) {
-                        if (!associations.find(a => a.as === includeModel.model)) {
-                            throw new ApiRequestError(`No association found with name ${includeModel.model}. Possible associations are: ${associations.map(a => a.as).join(', ')};`, 400);
-                        }
-                    }
                 }
 
                 let where;
