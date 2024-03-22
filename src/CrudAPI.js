@@ -57,6 +57,20 @@ export default class CrudAPI {
             authorizationOptions = newOptions;
         }
 
+        /**
+         * @function getConstructorOptions
+         * @description Gets the constructor options for the API.
+         * @returns {object} The constructor options.
+         */
+        this.getConstructorOptions = function() {
+            return {
+                serverURL,
+                endpoint,
+                foreignKeyName,
+                options
+            };
+        }
+
         if (options.find) {
             /**
              * @function find
@@ -216,5 +230,14 @@ export default class CrudAPI {
         if (options.delete) apiOptions.delete = { auth }
         
         return apiOptions;
+    }
+
+    static toJson(api) {
+        const options = api.getConstructorOptions();
+        return JSON.stringify(options);
+    }
+
+    static fromJson(json) {
+        return new CrudAPI(json.serverURL, json.endpoint, json.foreignKeyName, json.options);
     }
 }
