@@ -30,7 +30,7 @@ Install via package.json:
 Find the latest version at https://github.com/VR-web-shop/METEOR/pkgs/npm/meteor
 
 ## Usage
-The package provides three important classes `RestController`, `CrudService`, and `CrudAPI`.
+The package provides four important classes/functions `RestController`, `CrudService`, `BuildAPISDK`, and `CrudAPI`.
 
 ### RestController
 RestController can be used to generate an API to read and write data from Sequelize models.
@@ -388,4 +388,30 @@ api.update({uuid: '...', description: 'new description'})
 
 // Delete material
 api.delete({uuid: '...'})
+```
+
+## BuildAPISDK
+The `BuildAPISDK` function can be used to generate a sdk file from an array of controllers.
+```js
+import meteor from "@vr-web-shop/meteor";
+
+BuildAPISDK(filePath: string, serverURL: string, controllers: Array<meteor.RestController>[])
+```
+
+### Example
+
+```js
+import meteor from "@vr-web-shop/meteor";
+
+// Create the controller
+const controller = meteor.RestController(`api/v1/materials`, 'uuid', Material, {
+    find: { includes: [{ endpoint: 'textures', model: 'Texture' }], middleware: [] },
+    findAll: { includes: [ 'Texture' ], middleware: [] },
+    create: { properties: [ 'name', 'description', 'material_type_name' ], middleware: [] },
+    update: { properties: [ 'name', 'description', 'material_type_name' ], middleware: [] },
+    delete: { middleware: [] }
+})
+
+// Save the SDK file
+BuildAPISDK('./sdk.js', 'http://localhost:3000', [controller])
 ```

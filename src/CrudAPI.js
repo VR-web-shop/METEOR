@@ -13,8 +13,27 @@
  */
 export default class CrudAPI {
     constructor(serverURL, endpoint, foreignKeyName = '', options = {}) {
-        const url = `${serverURL}${endpoint}`;
+        let _serverURL = serverURL;
+        let _endpoint = endpoint;        
         let authorizationOptions = options.authorization || {};
+
+        /**
+         * @function setServerURL
+         * @description Sets the server URL for the API.
+         * @param {string} serverURL - The server URL.
+         */
+        this.setServerURL = function (serverURL) {
+            _serverURL = serverURL;
+        }
+
+        /**
+         * @function setEndpoint
+         * @description Sets the endpoint for the API.
+         * @param {string} endpoint - The endpoint.
+         */
+        this.setEndpoint = function (endpoint) {
+            _endpoint = endpoint;
+        }
 
         /**
          * @function buildRequestOptions
@@ -71,6 +90,10 @@ export default class CrudAPI {
             };
         }
 
+        const getUrl = function () {
+            return `${_serverURL}${_endpoint}`;
+        }
+
         if (options.find) {
             /**
              * @function find
@@ -87,7 +110,7 @@ export default class CrudAPI {
                     throw new Error(`No ${foreignKeyName} provided.`);
                 }
 
-                let currentEndpoint = `${url}/${key}`;
+                let currentEndpoint = `${getUrl()}/${key}`;
                 if (methodOptions.include) {
                     currentEndpoint += `/${methodOptions.include}`;
                 }
@@ -112,7 +135,7 @@ export default class CrudAPI {
              */
             this.findAll = async function (params) {
                 const { page, limit, q, include } = params;
-                let _endpoint = `${url}?limit=${limit}`;
+                let _endpoint = `${getUrl()}?limit=${limit}`;
                 if (page) _endpoint += `&page=${page}`;
                 if (q) _endpoint += `&q=${q}`;
                 if (include) _endpoint += `&include=${include}`;
@@ -146,7 +169,7 @@ export default class CrudAPI {
                     },
                     body: params
                 }, options.create.auth);
-                const response = await fetch(url, requestOptions);
+                const response = await fetch(getUrl(), requestOptions);
                 const data = await response.json();
                 return data;
             };
@@ -181,7 +204,7 @@ export default class CrudAPI {
                     },
                     body: params
                 }, options.update.auth);
-                const response = await fetch(url, requestOptions);
+                const response = await fetch(getUrl(), requestOptions);
                 const data = await response.json();
                 return data;
             };
@@ -208,7 +231,7 @@ export default class CrudAPI {
                     },
                     body: params
                 }, options.delete.auth);
-                const response = await fetch(url, requestOptions);
+                const response = await fetch(getUrl(), requestOptions);
                 return response.status === 204;
             };
         }
@@ -238,6 +261,7 @@ export default class CrudAPI {
     }
 
     static fromJson(json) {
-        return new CrudAPI(json.serverURL, json.endpoint, json.foreignKeyName, json.options);
+        const parsed = JSON.parse(json);
+        return new CrudAPI(parsed.serverURL, parsed.endpoint, parsed.foreignKeyName, parsed.options);
     }
 }
