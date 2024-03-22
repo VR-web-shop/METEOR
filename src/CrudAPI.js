@@ -161,12 +161,13 @@ export default class CrudAPI {
                     }
                 }
 
+                const body = JSON.stringify(params);
                 const requestOptions = await buildRequestOptions({
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: params
+                    body
                 }, options.create.auth);
                 const response = await fetch(getUrl(), requestOptions);
                 
@@ -197,12 +198,13 @@ export default class CrudAPI {
                     throw new Error(`No ${foreignKeyName} provided.`);
                 }
 
+                const body = JSON.stringify(params);
                 const requestOptions = await buildRequestOptions({
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: params
+                    body
                 }, options.update.auth);
                 const response = await fetch(getUrl(), requestOptions);
                 const data = await response.json();
@@ -224,12 +226,13 @@ export default class CrudAPI {
                     throw new Error(`No ${foreignKeyName} provided.`);
                 }
 
+                const body = JSON.stringify(params);
                 const requestOptions = await buildRequestOptions({
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: params
+                    body
                 }, options.delete.auth);
                 const response = await fetch(getUrl(), requestOptions);
                 return response.status === 204;
