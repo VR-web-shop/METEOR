@@ -74,7 +74,7 @@ export default class CrudService {
                     includeModels = methodOptions.include.split(',');
 
                     const associations = Object.values(Model.associations);
-                    for (let includeModel of includeModels)
+                    for (let includeModel of includeModels) {
                         if (!associations.find(a => a.as === includeModel)) {
                             throw new ApiRequestError(`No association found with name ${includeModel}. Possible associations are: ${associations.map(a => a.as).join(', ')};`, 400);
                         }
