@@ -32,6 +32,9 @@ import express from 'express';
  *      // The properties that should be searchable
  *      searchProperties: string[],
  * 
+ *      // The properties that should be allowed to use 'WHERE' to find
+        whereProperties: string[],
+ * 
  *      // The default limit for the findAll route
  *      defaultLimit: number,
  * 
@@ -164,14 +167,14 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
         router.route(endpoint)        
             .get(options.findAll.middleware, async (req, res) => {
                 try {
-                    const { page, limit, q, include } = req.query;
+                    const { page, limit, q, include, where } = req.query;
                     
                     if (include && !options.findAll.includes ||
                         include && options.findAll.includes && !options.findAll.includes.includes(include)) {
                         return res.status(400).send(`No allowed association found with name ${include}.`);
                     }
 
-                    const { count, pages, rows } = await service.findAll({page, limit, q}, {include});
+                    const { count, pages, rows } = await service.findAll({page, limit, q, where}, {include});
                     return res.send({ count, pages, rows });
                 } catch (e) {
                     if (e instanceof ApiRequestError) {

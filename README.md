@@ -71,6 +71,9 @@ const controller = meteor.RestController(endpoint: string, foreign_key_name: str
         // The properties that should be searchable
         searchProperties: string[],
 
+        // The properties that should be allowed to use 'WHERE' to find
+        whereProperties: string[],
+
         // The default limit for the findAll route
         defaultLimit: number,
 
@@ -224,6 +227,7 @@ const service = new meteor.CrudService(model: SequelizeModel, foreign_key_name: 
     // Not providing the findAll option will not create the findAll method
     findAll: {
         searchProperties: string[],
+        whereProperties: string[],
         defaultLimit: number,
         defaultPage: number,
         dto: string[]

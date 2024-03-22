@@ -9,11 +9,12 @@ import ApiRequestError from './ApiRequestError.js';
  *    },
  *    findAll: { 
  *      searchProperties: ['name'], 
+ *      whereProperties: ['name'],
  *      defaultLimit: 10, 
  *      defaultPage: 1, 
- *      dto: ['uuid', 'name'] 
+ *      dto: ['uuid', 'name']
  *    },
- *    create: { 
+ *    create: {
  *      properties: ['name'], 
  *      dto: ['uuid', 'name'] 
  *    },
@@ -78,6 +79,15 @@ export default class CrudService {
                     }
                 }
 
+                let where;
+                if (params.where) {
+                    where = params.where;
+                    
+                    if (!options.findAll.whereProperties || !options.findAll.whereProperties.every(prop => Object.keys(where).includes(prop))) {
+                        throw new ApiRequestError(`Invalid where properties. Possible properties are: ${options.findAll.whereProperties.join(', ')};`, 400);
+                    }
+                }
+
                 const limit = parseInt(params.limit) || options.findAll.defaultLimit || 10;
                 const page = parseInt(params.page) || options.findAll.defaultPage || 1;
                 
@@ -85,9 +95,10 @@ export default class CrudService {
                 const count = await Model.count();
                 const pages = Math.ceil(count / limit);
 
-                const rows = includeModel
-                    ? await Model.findAll({ include: includeModel, limit, offset })
-                    : await Model.findAll({ limit, offset })
+                const findOptions = { limit, offset };
+                if (includeModel) findOptions.include = includeModel;
+                if (where) findOptions.where = where;
+                const rows = await Model.findAll(findOptions)
 
                 const result = { count, pages, rows: rows.map(r=>r.dataValues) };
                 
@@ -185,6 +196,7 @@ export default class CrudService {
 
         if (options.findAll) serviceOptions.findAll = {
             searchProperties: options.findAll.searchProperties,
+            whereProperties: options.findAll.whereProperties,
             defaultLimit: options.findAll.defaultLimit,
             defaultPage: options.findAll.defaultPage,
             dto: options.findAll.dto

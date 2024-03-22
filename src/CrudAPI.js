@@ -133,11 +133,16 @@ export default class CrudAPI {
              * @example const records = await findAll({ limit: 10, page: 1, q: 'search', include: 'profile' });
              */
             this.findAll = async function (params) {
-                const { page, limit, q, include } = params;
+                const { page, limit, q, include, where } = params;
+                if (!limit) {
+                    throw new Error('No limit parameter provided.');
+                }
+
                 let _endpoint = `${getUrl()}?limit=${limit}`;
                 if (page) _endpoint += `&page=${page}`;
                 if (q) _endpoint += `&q=${q}`;
                 if (include) _endpoint += `&include=${include}`;
+                if (where) _endpoint += `&where=${where}`;
 
                 const requestOptions = await buildRequestOptions({ method: 'GET' }, options.findAll.auth);
                 const response = await fetch(_endpoint, requestOptions);
