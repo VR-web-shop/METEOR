@@ -84,8 +84,9 @@ export default class CrudService {
                             };
                         } else {
                             includeArray[i] = { model: includeModel };
-                        }                        
+                        }              
                     }
+                    includeModels = includeArray;
 
                     const associations = Object.values(Model.associations);
                     for (let includeModel of includeModels) {
