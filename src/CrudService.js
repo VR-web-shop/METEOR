@@ -90,6 +90,7 @@ export default class CrudService {
                         } else {
                             const parentModelInstance = associations.find(a => a.as === includeModel);
                             includeArray[i] = { model: parentModelInstance };
+                            console.log("parentModelInstance", typeof parentModelInstance, parentModelInstance);
                         }              
                     }
                     includeModels = includeArray;
