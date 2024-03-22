@@ -5,9 +5,9 @@ import fs from 'fs';
  * @function BuildSDK
  * @param {string} filePath
  * @param {string} serverURL
- * @param {Array} controllers
+ * @param {Object<RestController>} controllers
  */
-const BuildSDK = function(filePath, serverURL, controllers = []){
+const BuildSDK = function(filePath, serverURL, controllers = {}){
     const apis = []
 
     for (let key of Object.keys(controllers)) {
@@ -17,7 +17,7 @@ const BuildSDK = function(filePath, serverURL, controllers = []){
         apis.push({ [key]: data })
     }
 
-    const classString = meteor.CrudAPI.toString()
+    const classString = CrudAPI.toString()
     const json = JSON.stringify({apis}, null, 4)
     const sdk = `
     const CrudAPI = ${classString}
