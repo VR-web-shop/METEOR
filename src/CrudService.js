@@ -69,13 +69,15 @@ export default class CrudService {
                     });
                 }
 
-                let includeModel;
+                let includeModels;
                 if (methodOptions.include) {
-                    includeModel = methodOptions.include;
+                    includeModels = methodOptions.include.split(',');
 
                     const associations = Object.values(Model.associations);
-                    if (!associations.find(a => a.as === includeModel)) {
-                        throw new ApiRequestError(`No association found with name ${includeModel}. Possible associations are: ${associations.map(a => a.as).join(', ')};`, 400);
+                    for (let includeModel of includeModels)
+                        if (!associations.find(a => a.as === includeModel)) {
+                            throw new ApiRequestError(`No association found with name ${includeModel}. Possible associations are: ${associations.map(a => a.as).join(', ')};`, 400);
+                        }
                     }
                 }
 
@@ -96,7 +98,7 @@ export default class CrudService {
                 const pages = Math.ceil(count / limit);
 
                 const findOptions = { limit, offset };
-                if (includeModel) findOptions.include = includeModel;
+                if (includeModels) findOptions.include = includeModels;
                 if (where) findOptions.where = where;
                 const rows = await Model.findAll(findOptions)
 
