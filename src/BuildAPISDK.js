@@ -29,11 +29,10 @@ const BuildSDK = function(filePath, serverURL, controllers = {}){
         
         const api = {};
         const controllers = apis.apis;
-        console.log(controllers);
+        
         for (let object of apis.apis) {
             const key = Object.keys(object)[0];
-            const parsed = JSON.parse(object[key]);
-            const apiInstance = CrudAPI.fromJson(parsed);
+            const apiInstance = CrudAPI.fromJson(object[key]);
             apiInstance.setServerURL(serverURL);
             api[key] = apiInstance;
         }
