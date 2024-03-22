@@ -28,8 +28,6 @@ const BuildSDK = function(filePath, serverURL, controllers = {}){
         }
         
         const api = {};
-        const controllers = apis.apis;
-        
         for (let object of apis.apis) {
             const key = Object.keys(object)[0];
             const apiInstance = CrudAPI.fromJson(object[key]);
