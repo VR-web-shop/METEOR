@@ -44,7 +44,6 @@ export default class CrudAPI {
          * @example const requestOptions = buildRequestOptions({ method: 'GET' }, true);
          */
         const buildRequestOptions = async function (requestOptions, useAuth = false) {
-
             if (useAuth) {
                 if (authorizationOptions.storage === 'localStorage') {
                     const token = localStorage.getItem(authorizationOptions.key);
@@ -170,6 +169,7 @@ export default class CrudAPI {
                     body: params
                 }, options.create.auth);
                 const response = await fetch(getUrl(), requestOptions);
+                console.log(response, requestOptions)
                 const data = await response.json();
                 return data;
             };

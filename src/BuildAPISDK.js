@@ -20,7 +20,7 @@ const BuildSDK = function(filePath, serverURL, controllers = {}){
     const classString = CrudAPI.toString()
     const json = JSON.stringify({apis}, null, 4)
     const sdk = `
-    const CrudAPI = ${classString}
+    ${classString}
     const apis = ${json}
     const SDK = function(serverURL) {    
         if (!serverURL) {
