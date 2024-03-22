@@ -168,12 +168,6 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
             .get(options.findAll.middleware, async (req, res) => {
                 try {
                     const { page, limit, q, include, where } = req.query;
-                    
-                    if (include && !options.findAll.includes ||
-                        include && options.findAll.includes && !options.findAll.includes.includes(include)) {
-                        return res.status(400).send(`No allowed association found with name ${include}.`);
-                    }
-
                     const { count, pages, rows } = await service.findAll({page, limit, q, where}, {include});
                     return res.send({ count, pages, rows });
                 } catch (e) {
