@@ -89,19 +89,29 @@ class FindAllRequest {
      * @static
      */
     static getWhereParam(req) {
-        const whereProperties = req.options.findAll.whereProperties;
-        const whereParam = req.params.where;
-
+        const whereProperties = req.serviceOptions.findAll.whereProperties;        
         if (!whereProperties) {
             throw new ApiRequestError('No search properties are defined.', 400);
         }
 
-        const validProp = whereProperties.every(prop => Object.keys(whereParam).includes(prop));
-        if (!validProp) {
-            throw new ApiRequestError(`Invalid where property. Possible properties are: ${whereProperties.join(', ')};`, 400);
+        const whereOptions = {};
+        const whereParamsArray = req.params.where.split(',');
+        for (let i = 0; i < whereParamsArray.length; i++) {
+            const whereParam = whereParamsArray[i].split(':');
+            if (whereParam.length !== 2) {
+                throw new ApiRequestError('Invalid where parameter. Must be in the format: prop:value', 400);
+            }
+
+            const prop = whereParam[0];
+            const value = whereParam[1];
+            if (!whereProperties.includes(prop)) {
+                throw new ApiRequestError(`Invalid where property. Possible properties are: ${whereProperties.join(', ')};`, 400);
+            }
+
+            whereOptions[prop] = value;
         }
 
-        return whereParam;
+        return whereOptions;
     }
 
     /**
