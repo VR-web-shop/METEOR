@@ -133,8 +133,11 @@ class FindAllRequest {
             if (hasSubassociations) {
                 const subassociations = Object.values(result.model.associations);
                 const subassociationsNames = requestArray[1].split(':');
-                const associationTargets = subassociationsNames.map(name => getAssociation(subassociations, name));
-                result.include = associationTargets;
+                const subresults = [];
+                for (let j = 0; j < subassociationsNames.length; j++) {
+                    const subassociation = getAssociation(subassociations, subassociationsNames[j]);
+                    subresults.push({ model: subassociation, as: subassociationsNames[j] });
+                }
             }
 
             results.push(result);
