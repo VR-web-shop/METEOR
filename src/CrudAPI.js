@@ -130,19 +130,84 @@ export default class CrudAPI {
              * @example const records = await findAll({ limit: 10 });
              * @example const records = await findAll({ limit: 10, page: 1 });
              * @example const records = await findAll({ limit: 10, page: 1, q: 'search' });
-             * @example const records = await findAll({ limit: 10, page: 1, q: 'search', include: 'profile' });
+             * @example const records = await findAll({ limit: 10, page: 1, q: 'search', include: [
+             *   { model: 'profile', include: ['address', 'phone'] },
+             *   { model: 'posts' }
+             * ]
+             * @example const records = await findAll({ limit: 10, page: 1, where: { name: 'John Doe', age: 30 } });
              */
             this.findAll = async function (params) {
                 const { page, limit, q, include, where } = params;
                 if (!limit) {
                     throw new Error('No limit parameter provided.');
-                }
+                }                
 
                 let _endpoint = `${getUrl()}?limit=${limit}`;
+                
+                /**
+                 * Parse the where object to a string
+                 */
+                if (where) {
+                    if (typeof where !== 'object') {
+                        throw new Error('Where parameter must be an object.');
+                    }
+
+                    _endpoint += '&where=';
+                    for (let i = 0; i < Object.keys(where).length; i++) {
+                        const key = Object.keys(where)[i];
+                        const value = where[key];
+                        _endpoint += `${key}:${value}`;
+                        
+                        if (i < Object.keys(where).length - 1) {
+                            _endpoint += ',';
+                        }
+                    }
+                }
+
+                /**
+                 * Parse the include array to a string
+                 */
+                if (include) {
+                    if (!Array.isArray(include)) {
+                        throw new Error('Include parameter must be an array.');
+                    }
+
+                    _endpoint += '&include=';
+                    for (let i = 0; i < include.length; i++) {
+
+                        // Check if include is a object
+                        if (typeof include[i] !== 'object') {
+                            throw new Error('Include parameter must be an object.');
+                        }
+
+                        // Check if include has the model property
+                        if (!include[i].model) {
+                            throw new Error('Include parameter must have a model property.');
+                        }
+
+                        _endpoint += include[i].model;
+                        // Check if include has the include property
+                        if (include[i].include) {
+                            _endpoint += '.';
+
+                            // Check if include is an array
+                            if (!Array.isArray(include[i].include)) {
+                                throw new Error('Include parameter must be an array of strings.');
+                            }
+
+                            for (let j = 0; j < include[i].include.length; j++) {
+                                _endpoint += include[i].include[j];
+
+                                if (j < include[i].include.length - 1) {
+                                    _endpoint += ':';
+                                }
+                            }
+                        }
+                    }
+                }
+                
                 if (page) _endpoint += `&page=${page}`;
                 if (q) _endpoint += `&q=${q}`;
-                if (include) _endpoint += `&include=${include}`;
-                if (where) _endpoint += `&where=${where}`;
 
                 const requestOptions = await buildRequestOptions({ method: 'GET' }, options.findAll.auth);
                 const response = await fetch(_endpoint, requestOptions);
