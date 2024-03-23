@@ -138,6 +138,7 @@ class FindAllRequest {
                     const subassociation = getAssociation(subassociations, subassociationsNames[j]);
                     subresults.push({ model: subassociation, as: subassociationsNames[j] });
                 }
+                result.include = subresults;
             }
 
             results.push(result);
