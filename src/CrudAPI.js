@@ -203,6 +203,10 @@ export default class CrudAPI {
                                 }
                             }
                         }
+
+                        if (i < include.length - 1) {
+                            _endpoint += ',';
+                        }
                     }
                 }
                 
