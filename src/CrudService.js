@@ -1,5 +1,7 @@
 import ApiRequestError from './ApiRequestError.js';
 
+import FindAllRequest from './parameter_builders/FindAllRequest.js';
+
 /**
  * @class CrudService
  * @classdesc A class that generates CRUD services for a given Sequelize model.
@@ -60,66 +62,9 @@ export default class CrudService {
 
         if (options.findAll) {
             this.findAll = async function (params, methodOptions={}) {
-                const q = params.q;
-                if (q && options.findAll.searchProperties) {
-                    return await Model.findAll({
-                        where: {
-                            $or: options.findAll.searchProperties.map(prop => ({ [prop]: { like: '%' + q + '%' } }))
-                        }
-                    });
-                }
-
-                let includeModels;
-                if (methodOptions.include) {
-                    const associations = Object.values(Model.associations);
-                    const includeArray = methodOptions.include.split(',');
-                    for (let i = 0; i < includeArray.length; i++) {                        
-                        const includeModel = includeArray[i];
-                        const subIncludes = includeModel.split('.');
-
-                        if (subIncludes.length > 1) {
-                            const subIncludesArray = subIncludes[1].split(':');
-                            const parentModelInstance = associations.find(a => a.as === subIncludes[0]);
-                            const parentModelInstanceAssociations = Object.values(parentModelInstance.target.associations);
-                            console.log("parentModelInstanceAssociations", parentModelInstanceAssociations);
-                            const childModelInstances = parentModelInstanceAssociations.filter(a => subIncludesArray.includes(a.as));
-                            includeArray[i] = {
-                                model: parentModelInstance,
-                                include: childModelInstances
-                            };
-                        } else {
-                            const parentModelInstance = associations.find(a => a.as === includeModel);
-                            includeArray[i] = { model: parentModelInstance };
-                            console.log("parentModelInstance", typeof parentModelInstance, parentModelInstance);
-                        }              
-                    }
-                    includeModels = includeArray;
-                    console.log("includeModels", includeModels);
-                    
-                }
-
-                let where;
-                if (params.where) {
-                    where = params.where;
-                    
-                    if (!options.findAll.whereProperties || !options.findAll.whereProperties.every(prop => Object.keys(where).includes(prop))) {
-                        throw new ApiRequestError(`Invalid where properties. Possible properties are: ${options.findAll.whereProperties.join(', ')};`, 400);
-                    }
-                }
-
-                const limit = parseInt(params.limit) || options.findAll.defaultLimit || 10;
-                const page = parseInt(params.page) || options.findAll.defaultPage || 1;
-                
-                const offset = (page - 1) * limit;
-                const count = await Model.count();
-                const pages = Math.ceil(count / limit);
-
-                const findOptions = { limit, offset };
-                if (includeModels) findOptions.include = includeModels;
-                if (where) findOptions.where = where;
-                const rows = await Model.findAll(findOptions)
-
-                const result = { count, pages, rows: rows.map(r=>r.dataValues) };
+                const { query, props } = await new FindAllRequest(Model, params, methodOptions, options).getResult();
+                const rows = await Model.findAll(query)
+                const result = { count: props.count, pages: props.pages, rows: rows.map(r=>r.dataValues) };
                 
                 if (options.findAll.dto) {
                     return {count, pages, rows: rows.map(r=>CrudService.arrayToDto(options.findAll.dto, r))};
