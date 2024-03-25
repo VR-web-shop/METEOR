@@ -144,9 +144,9 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                 .get(options.find.middleware, async (req, res) => {
 
                     try {
-                        const params = new ParamsBuilder(req.params, [pkName, includeEndpoint])
+                        const params = new ParamsBuilder(req.params, [pkName, includeModel])
                             .filterProperties([pkName])
-                            .filterAssociation(sequelizeModel, includeEndpoint)
+                            .filterAssociation(sequelizeModel, includeModel)
                             .build();
                         if (options.debug) console.log(params);
                         const entity = await service.find(params[pkName], includeModel);
