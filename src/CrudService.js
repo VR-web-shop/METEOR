@@ -41,6 +41,10 @@ export default class CrudService {
              * @example const result = await service.find('123', 'association');
              */
             this.find = async function (pk, include=null) {
+                if (!pk) {
+                    throw new ApiRequestError(`No ${foreignKeyName} provided.`, 400);
+                }
+
                 const query = { where: { [foreignKeyName]: pk } };
 
                 if (include) {
@@ -54,12 +58,10 @@ export default class CrudService {
                     throw new ApiRequestError(`No ${Model.name} found with ${foreignKeyName} ${pk}.`, 400);
                 }
 
-                if (include) {
-                    for (let ic of query.include) {
-                        result.dataValues[ic.as] = Array.isArray(result.dataValues[ic.as])
-                            ? result.dataValues[ic.as].map(r=>r.dataValues)
-                            : result.dataValues[ic.as].dataValues;
-                    }
+                if (include && result.dataValues[include]) {
+                    result.dataValues[include] = Array.isArray(result.dataValues[include])
+                            ? result.dataValues[include].map(r=>r.dataValues)
+                            : result.dataValues[include].dataValues;
                 }
 
                 /**
@@ -183,7 +185,7 @@ export default class CrudService {
              *   [{ model: Model, as: 'Model', include: ['SubAssociation1', 'SubAssociation2']}]
              * );
              */
-            this.create = async function (params, responseInclude=null) {
+            this.create = async function (params={}, responseInclude=null) {
                 const properties = new ParamsBuilder(params, options.create.properties)
                     .filterProperties(options.create.properties)
                     .build();
@@ -251,7 +253,7 @@ export default class CrudService {
                 let result = await Model.update(properties,
                     { where: { [foreignKeyName]: foreignKey } }
                 );
-
+                
                 /**
                  * If a responseInclude parameter is provided,
                  * include the associated models in the response.
