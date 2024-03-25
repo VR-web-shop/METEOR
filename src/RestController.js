@@ -173,7 +173,8 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
 
                 try {
                     const params = new ParamsBuilder(req.query)
-                            .filterProperties(['page', 'limit', 'q', 'where'])
+                            .filterProperties(['page', 'limit', 'q'])
+                            .filterStringObjectArray('where', 'where', () => !req.query.where)
                             .filterAssociations(sequelizeModel, 'include', () => !req.query.include)
                             .build();
                     if (options.debug) console.log(params);

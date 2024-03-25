@@ -39,6 +39,30 @@ export default class ParamsBuilder {
     }
 
     /**
+     * @function filterStringArray
+     * @description Filter a string array
+     * @param {String} keyName - The key name
+     * @param {String} prefix - The prefix
+     * @returns {ParamsBuilder} The ParamsBuilder instance
+     * @example filterStringArray('keyName', 'prefix')
+     * 
+     * What is a string object array?
+     * It is a string that contains key-value pairs separated by commas and colons.
+     * Example: 'key1:value1,key2:value2'
+     */
+    filterStringObjectArray(keyName, prefix, skipIf=()=>false) {
+        if (skipIf()) return this;
+        const data = this.inputParams[keyName];
+        const arr = data.split(',');
+        const obj = arr.reduce((acc, item) => {
+            const objArr = item.split(':');
+            acc[objArr[0]] = objArr[1];
+            return acc;
+        }, {});
+        this.outputParams[prefix] = obj;
+    }
+
+    /**
      * @function getAssociationOptions
      * @description Get the association options for a single association
      * @param {Object} Model - The Sequelize model
@@ -69,7 +93,7 @@ export default class ParamsBuilder {
      */
     filterAssociations(Model, includeParameter, skipIf=()=>false) {
         if (skipIf()) return this;
-        
+
         const getAssociation = (associations, as='') => {
             const association = associations.find(a => a.as === as);
             if (!association) throw new ApiRequestError(`Invalid association: ${as}`, 400);
