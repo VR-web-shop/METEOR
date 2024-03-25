@@ -118,7 +118,7 @@ export default class CrudService {
                 }
 
                 if (where) {
-                    for (let key of where) {
+                    for (let key in where) {
                         if (!options.findAll.whereProperties.includes(key)) {
                             throw new ApiRequestError(`Invalid where property ${key}.`, 400);
                         }
