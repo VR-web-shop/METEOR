@@ -24,7 +24,8 @@ import ParamsBuilder from './ParamsBuilder.js';
  *      requiredProperties: ['uuid'],
  *      dto: ['uuid', 'name'] 
  *    },
- *    delete: true
+ *    delete: true,
+ *    debug: true
  * });
  */
 export default class CrudService {
@@ -45,6 +46,8 @@ export default class CrudService {
                 if (include) {
                     query.include = include;
                 }
+                
+                if (options.debug) console.log(`CrudService#${Model.name}#find = query =>`, query);
                 
                 const result = await Model.findOne(query);
                 if (!result) {
@@ -95,12 +98,14 @@ export default class CrudService {
              * );
              */
             this.findAll = async function (limit, page=1, q=null, where=null, include=null) {
-                const query = { limit };
+                const query = {};
 
+                limit = parseInt(limit);
                 if (limit < 1) {
                     query.limit = options.findAll.defaultLimit || 10;
                 }
 
+                page = parseInt(page ? page : 1);
                 if (page < 1) {
                     page = options.findAll.defaultPage || 1;
                 }
@@ -128,6 +133,8 @@ export default class CrudService {
                 if (include) {
                     query.include = include;
                 }
+
+                if (options.debug) console.log(`CrudService#${Model.name}#findAll = query =>`, query);
 
                 const offset = (page - 1) * query.limit;
                 const count = await Model.count();
@@ -184,6 +191,8 @@ export default class CrudService {
                     .filterProperties(options.create.properties)
                     .build();
                     
+                if (options.debug) console.log(`CrudService#${Model.name}#create = properties =>`, properties);
+
                 let result = await Model.create(properties);
                 
                 /**
@@ -237,6 +246,8 @@ export default class CrudService {
                     .filterProperties(options.update.properties)
                     .build();
                 
+                if (options.debug) console.log(`CrudService#${Model.name}#update = properties =>`, properties);
+
                 /**
                  * Update the model with the given properties.
                  */
@@ -285,6 +296,9 @@ export default class CrudService {
              * @example const result = await service.destroy(123);
              */
             this.destroy = async function (foreignKey='') {
+
+                if (options.debug) console.log(`CrudService#${Model.name}#destroy = foreignKey =>`, foreignKey);
+
                 /**
                  * Destroy the model with the given primary key.
                  */
@@ -340,6 +354,7 @@ export default class CrudService {
         };
 
         if (options.delete) serviceOptions.delete = true;
+        if (options.debug) serviceOptions.debug = true;
         
         return serviceOptions;
     }
