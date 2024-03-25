@@ -60,6 +60,8 @@ export default class ParamsBuilder {
             return acc;
         }, {});
         this.outputParams[prefix] = obj;
+
+        return this;
     }
 
     /**
