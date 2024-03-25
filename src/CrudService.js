@@ -100,13 +100,10 @@ export default class CrudService {
             this.findAll = async function (limit, page=1, q=null, where=null, include=null) {
                 const query = {};
 
-                limit = parseInt(limit);
-                if (limit < 1) {
-                    query.limit = options.findAll.defaultLimit || 10;
-                }
+                query.limit = parseInt(limit) || options.findAll.defaultLimit || 10;
 
-                page = parseInt(page ? page : 1);
-                if (page < 1) {
+                if (page) page = parseInt(page);
+                if (!page || page < 1) {
                     page = options.findAll.defaultPage || 1;
                 }
 
