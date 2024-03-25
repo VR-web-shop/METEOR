@@ -1,6 +1,7 @@
 import CrudAPI from './CrudAPI.js';
 import ApiRequestError from './ApiRequestError.js';
 import CrudService from './CrudService.js';
+import ParamsBuilder from './ParamsBuilder.js';
 import express from 'express';
 
 /**
@@ -44,7 +45,7 @@ import express from 'express';
  *      // The association routes that should be allowed for this resource.
  *      // Note: associations can be included in the same findAll route by 
  *      // including {include: 'AssociationName'} in the body. 
- *      includes: string[]
+ *      includes: Object[]
  * 
  *      // Specify a DTO to transform the avoid leaking sensitive information
  *      dto: { parameter1: string, parameter2: string },
@@ -110,13 +111,12 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
     if (options.find && !options.find.serviceOnly) {
         router.route(`${endpoint}/:${pkName}`)
             .get(options.find.middleware, async (req, res) => {
-                const pk = req.params[pkName];
-                if (!pk) {
-                    return res.status(400).send(`No ${pkName} provided.`);
-                }
 
                 try {
-                    const entity = await service.find({[pkName]: pk});
+                    const params = new ParamsBuilder(req.params, [pkName])
+                        .filterProperties([pkName])
+                        .build();
+                    const entity = await service.find(params[pkName]);
                     if (!entity) {
                         return res.status(404).send(`No entity found with ${pkName} ${pk}.`);
                     }
@@ -139,13 +139,13 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
 
             router.route(`${endpoint}/:${pkName}/${includeEndpoint}`)
                 .get(options.find.middleware, async (req, res) => {
-                    const pk = req.params[pkName];
-                    if (!pk) {
-                        return res.status(400).send(`No ${pkName} provided.`);
-                    }
 
                     try {
-                        const entity = await service.find({[pkName]: pk}, {include: includeModel});
+                        const params = new ParamsBuilder(req.params, [pkName, includeEndpoint])
+                            .filterProperties([pkName])
+                            .filterAssociation(sequelizeModel, includeEndpoint)
+                            .build();
+                        const entity = await service.find(params[pkName], includeModel);
                         if (!entity) {
                             return res.status(404).send(`No entity found with ${pkName} ${pk}.`);
                         }
@@ -166,9 +166,19 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
     if (options.findAll && !options.findAll.serviceOnly) {
         router.route(endpoint)        
             .get(options.findAll.middleware, async (req, res) => {
+
                 try {
-                    const { page, limit, q, include, where } = req.query;
-                    const { count, pages, rows } = await service.findAll({page, limit, q, where}, {include});
+                    const params = new ParamsBuilder(req.query)
+                            .filterProperties(['page', 'limit', 'q', 'where'])
+                            .filterAssociations(sequelizeModel, 'include', () => !req.query.include)
+                            .build();
+                    const { count, pages, rows } = await service.findAll(
+                        params.page, 
+                        params.limit, 
+                        params.q, 
+                        params.where,
+                        params.include
+                    );
                     return res.send({ count, pages, rows });
                 } catch (e) {
                     if (e instanceof ApiRequestError) {
@@ -184,17 +194,12 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
     if (options.create && !options.create.serviceOnly) {
         router.route(endpoint)    
             .post(options.create.middleware, async (req, res) => {
-                const properties = {}
-                for (let key of options.create.properties) {
-                    if (!req.body[key]) {
-                        return res.status(400).send(`No ${key} provided.`);
-                    }
-
-                    properties[key] = req.body[key];
-                }
-
                 try {
-                    const entity = await service.create(properties);
+                    const params = new ParamsBuilder(req.body, options.create.properties)
+                            .filterProperties(options.create.properties, 'body')
+                            .filterAssociations(sequelizeModel, 'responseInclude', () => !req.body.responseInclude)
+                            .build();
+                    const entity = await service.create(params.body, params.responseInclude);
                     return res.send(entity);
                 } catch (e) {
                     if (e instanceof ApiRequestError) {
@@ -210,25 +215,18 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
     if (options.update && !options.update.serviceOnly) {
         router.route(endpoint)  
             .put(options.update.middleware, async (req, res) => {
-                const pk = req.body[pkName];
-                if (!pk) {
-                    return res.status(400).send(`No ${pkName} provided.`);
-                }
-
-                const requiredProperties = options.update.requiredProperties || [];
-                for (let key of requiredProperties) {
-                    if (!req.body[key]) {
-                        return res.status(400).send(`No ${key} provided.`);
-                    }
-                }
-
                 try {
-                    const properties = { [pkName]: pk };
-                    for (let key of options.create.properties) {
-                        if (req.body[key]) properties[key] = req.body[key];
-                    }
-
-                    const entity = await service.update(properties);
+                    const required = [pkName, ...options.update.requiredProperties];
+                    const params = new ParamsBuilder(req.body, required)
+                            .filterProperties([pkName])
+                            .filterProperties(options.update.properties, 'body')
+                            .filterAssociations(sequelizeModel, 'responseInclude', () => !req.body.responseInclude)
+                            .build();
+                    const entity = await service.update(
+                        params[pkName],
+                        params.body, 
+                        params.responseInclude
+                    );
                     return res.send(entity);
                 } catch (e) {
                     if (e instanceof ApiRequestError) {
@@ -244,13 +242,11 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
     if (options.delete && !options.delete.serviceOnly) {
         router.route(endpoint)  
             .delete(options.delete.middleware, async (req, res) => {
-                const pk = req.body[pkName];
-                if (!pk) {
-                    return res.status(400).send(`No ${pkName} provided.`);
-                }
-                
                 try {
-                    await service.destroy({[pkName]: pk});
+                    const params = new ParamsBuilder(req.params, [pkName])
+                        .filterProperties([pkName])
+                        .build();
+                    await service.destroy(params[pkName]);
                     return res.sendStatus(204);
                 } catch (e) {
                     if (e instanceof ApiRequestError) {
