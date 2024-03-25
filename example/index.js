@@ -247,6 +247,19 @@ try {
     
     console.log('find matparams', await matService.find(matFindIncludeTexture.uuid, matFindIncludeTexture.include));
 
+    const findAllParams = new ParamsBuilder({ page: 1, limit: 10 })
+        .filterProperties(['page', 'limit', 'q', 'where'])
+        .filterAssociations(Material, 'include', () => true)
+        .build();
+
+    console.log('findAll matparams', await matService.findAll(
+        findAllParams.limit,
+        findAllParams.page,
+        findAllParams.q,
+        findAllParams.where,
+        findAllParams.include
+    ));
+
     const matDeleteparams = new ParamsBuilder({ uuid: mat.uuid}, ['uuid'])
         .filterProperties(['uuid'])
         .build();

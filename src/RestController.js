@@ -173,8 +173,8 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                             .filterAssociations(sequelizeModel, 'include', () => !req.query.include)
                             .build();
                     const { count, pages, rows } = await service.findAll(
-                        params.page, 
                         params.limit, 
+                        params.page, 
                         params.q, 
                         params.where,
                         params.include
