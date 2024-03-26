@@ -251,14 +251,12 @@ export default class CrudService {
                 
                 if (options.debug) console.log(`CrudService#${Model.name}#update = properties =>`, properties);
 
-                /**
-                 * Update the model with the given properties.
-                 */
-                await Model.update(properties,
-                    { where: { [foreignKeyName]: foreignKey } }
-                );
+                const entity = await Model.findOne({ where: { [foreignKeyName]: foreignKey } });
+                if (!entity) {
+                    throw new ApiRequestError(`No ${Model.name} found with ${foreignKeyName} ${foreignKey}.`, 400);
+                }
 
-                let result;
+                let result = await entity.update(properties);
                 
                 /**
                  * If a responseInclude parameter is provided,
@@ -275,8 +273,6 @@ export default class CrudService {
                             ? result.dataValues[ic.as].map(r=>r.dataValues) 
                             : result.dataValues[ic.as].dataValues;
                     }
-                } else {
-                    result = await Model.findOne({ where: { [foreignKeyName]: foreignKey } });
                 }
 
                 if (options.debug) console.log(`CrudService#${Model.name}#update = result =>`, result);
