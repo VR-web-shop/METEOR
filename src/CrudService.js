@@ -227,6 +227,10 @@ export default class CrudService {
         }
 
         if (options.update) {
+            if (!options.update.requiredProperties) {
+                options.update.requiredProperties = [];
+            }
+
             /**
              * @function update
              * @description Update a new model

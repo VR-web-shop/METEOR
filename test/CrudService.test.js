@@ -55,11 +55,11 @@ test('CrudService should not define functions if none options was provided', () 
 })
 
 test('CrudService should define functions if an option for the function was provided', () => {
-    const materialServiceFind = new CrudService(Material, 'uuid', { find: true });
-    const materialServiceFindAll = new CrudService(Material, 'uuid', { findAll: true });
-    const materialServiceCreate = new CrudService(Material, 'uuid', { create: true });
-    const materialServiceUpdate = new CrudService(Material, 'uuid', { update: true });
-    const materialServiceDestroy = new CrudService(Material, 'uuid', { delete: true });
+    const materialServiceFind = new CrudService(Material, 'uuid', { find: {} });
+    const materialServiceFindAll = new CrudService(Material, 'uuid', { findAll: {} });
+    const materialServiceCreate = new CrudService(Material, 'uuid', { create: {} });
+    const materialServiceUpdate = new CrudService(Material, 'uuid', { update: {} });
+    const materialServiceDestroy = new CrudService(Material, 'uuid', { delete: {} });
 
     expect(materialServiceFind).toBeDefined();
     expect(materialServiceFindAll).toBeDefined();
@@ -110,6 +110,21 @@ test('CrudService#create should throw an error if the required property is not p
     const materialService = new CrudService(Material, 'uuid', { create: { properties: ['name']} });
 
     await expect(() => materialService.create()).rejects.toThrowError('No name provided');
+})
+
+test('CrudService#update when providing no requiredProperties option, everything should be updateable', async () => {
+    const materialService = new CrudService(Material, 'uuid', {
+        find: true,
+        update: { properties: ['name'] }
+    });
+    const material = await materialService.update(
+        '00000000-0000-0000-0000-000000000000', 
+        { name: 'Material 3' }
+    );
+
+    expect(material).toBeDefined();
+    expect(material.uuid).toBe('00000000-0000-0000-0000-000000000000');
+    expect(material.name).toBe('Material 3');
 })
 
 test('CrudService#update should update a material', async () => {
