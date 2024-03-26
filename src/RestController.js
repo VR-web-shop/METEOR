@@ -144,7 +144,7 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                 .get(options.find.middleware, async (req, res) => {
 
                     try {
-                        const params = new ParamsBuilder(req.params, [pkName, includeModel])
+                        const params = new ParamsBuilder(req.params, [pkName])
                             .filterProperties([pkName])
                             .filterAssociation(sequelizeModel, includeModel)
                             .build();
@@ -223,7 +223,12 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
         router.route(endpoint)  
             .put(options.update.middleware, async (req, res) => {
                 try {
-                    const required = [pkName, ...options.update.requiredProperties];
+                    const required = [pkName];
+                    
+                    if (options.update.requiredProperties) {
+                        required.push(...options.update.requiredProperties);
+                    }
+
                     const params = new ParamsBuilder(req.body, required)
                             .filterProperties([pkName])
                             .filterProperties(options.update.properties, 'body')
