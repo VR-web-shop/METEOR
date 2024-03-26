@@ -11,8 +11,18 @@ import fs from 'fs';
  * @throws {Error} filePath is required
  * @throws {Error} serverURL is required
  * @throws {Error} controllers is required
+ * @example const sdk = BuildSDK('sdk.js', 'http://localhost:3000', { 
+ *  ControllerName: new ControllerName() 
+ * }, { 
+ *  storage: 'localStorage', key: 'auth' 
+ * })
+ * @example const sdk = BuildSDK('sdk.js', 'http://localhost:3000', { 
+ *  ControllerName: new ControllerName() 
+ * }, { 
+ *  storage: 'memory', token: 'YOUR_TOKEN'
+ * })
  */
-const BuildSDK = function(filePath, serverURL, controllers = {}) {
+const BuildSDK = function(filePath, serverURL, controllers = {}, authorization=null) {
     if (!filePath) {
         throw new Error('filePath is required');
     }
@@ -29,7 +39,7 @@ const BuildSDK = function(filePath, serverURL, controllers = {}) {
     const apis = []
     for (let key of Object.keys(controllers)) {
         const controller = controllers[key]
-        const api = controller.generateCrudAPI(serverURL)    
+        const api = controller.generateCrudAPI(serverURL, authorization)    
         const data = CrudAPI.toJson(api)
         apis.push({ [key]: data })
     }

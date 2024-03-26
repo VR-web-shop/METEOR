@@ -264,22 +264,34 @@ export default class CrudAPI {
         }
     }
 
-    static buildOptions(options = {}, auth = false) {
+    static buildOptions(options = {}) {
         const apiOptions = {}
+        const useAuth = (middleware) => middleware && middleware.length > 0
 
         if (options.authorization) apiOptions.authorization = options.authorization
-        if (options.find) apiOptions.find = { auth }
-        if (options.findAll) apiOptions.findAll = { auth }
+
+        if (options.find) apiOptions.find = { 
+            auth: useAuth(options.find.middleware)
+        }
+        
+        if (options.findAll) apiOptions.findAll = { 
+            auth: useAuth(options.findAll.middleware)
+        }
+
         if (options.create) apiOptions.create = {
-            auth,
+            auth: useAuth(options.create.middleware),
             properties: options.create.properties
         }
+
         if (options.update) apiOptions.update = {
-            auth,
+            auth: useAuth(options.update.middleware),
             properties: options.update.properties,
             requiredProperties: options.update.requiredProperties
         }
-        if (options.delete) apiOptions.delete = { auth }
+
+        if (options.delete) apiOptions.delete = { 
+            auth: useAuth(options.delete.middleware)
+        }
 
         return apiOptions;
     }
