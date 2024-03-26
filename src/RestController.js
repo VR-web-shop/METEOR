@@ -256,7 +256,7 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
         router.route(endpoint)  
             .delete(options.delete.middleware, async (req, res) => {
                 try {
-                    const params = new ParamsBuilder(req.params, [pkName])
+                    const params = new ParamsBuilder(req.body, [pkName])
                         .filterProperties([pkName])
                         .build();
                     if (options.debug) console.log(`RestController#${sequelizeModel.name}#delete = params =>`, params);
