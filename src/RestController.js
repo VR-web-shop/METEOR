@@ -118,7 +118,7 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                     const params = new ParamsBuilder(req.params, [pkName])
                         .filterProperties([pkName])
                         .build();
-                    if (options.debug) console.log(params);
+                    if (options.debug) console.log(`RestController#${Model.name}#find = params =>`, params);
                     const entity = await service.find(params[pkName]);
                     if (!entity) {
                         return res.status(404).send(`No entity found with ${pkName} ${pk}.`);
@@ -148,7 +148,7 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                             .filterProperties([pkName])
                             .filterAssociation(sequelizeModel, includeModel)
                             .build();
-                        if (options.debug) console.log(params);
+                        if (options.debug) console.log(`RestController#${Model.name}#find#${includeModel} = params =>`, params);
                         const entity = await service.find(params[pkName], includeModel);
                         if (!entity) {
                             return res.status(404).send(`No entity found with ${pkName} ${pk}.`);
@@ -177,7 +177,7 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                             .filterStringObjectArray('where', 'where', () => !req.query.where)
                             .filterAssociations(sequelizeModel, 'include', () => !req.query.include)
                             .build();
-                    if (options.debug) console.log(params);
+                    if (options.debug) console.log(`RestController#${Model.name}#findAll = params =>`, params);
                     const { count, pages, rows } = await service.findAll(
                         params.limit, 
                         params.page, 
@@ -205,7 +205,7 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                             .filterProperties(options.create.properties, 'body')
                             .filterAssociations(sequelizeModel, 'responseInclude', () => !req.body.responseInclude)
                             .build();
-                    if (options.debug) console.log(params);
+                    if (options.debug) console.log(`RestController#${Model.name}#create = params =>`, params);
                     const entity = await service.create(params.body, params.responseInclude);
                     return res.send(entity);
                 } catch (e) {
@@ -234,7 +234,7 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                             .filterProperties(options.update.properties, 'body')
                             .filterAssociations(sequelizeModel, 'responseInclude', () => !req.body.responseInclude)
                             .build();
-                    if (options.debug) console.log(params);
+                    if (options.debug) console.log(`RestController#${Model.name}#update = params =>`, params);
                     const entity = await service.update(
                         params[pkName],
                         params.body, 
@@ -259,7 +259,7 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                     const params = new ParamsBuilder(req.params, [pkName])
                         .filterProperties([pkName])
                         .build();
-                    if (options.debug) console.log(params);
+                    if (options.debug) console.log(`RestController#${Model.name}#delete = params =>`, params);
                     await service.destroy(params[pkName]);
                     return res.sendStatus(204);
                 } catch (e) {

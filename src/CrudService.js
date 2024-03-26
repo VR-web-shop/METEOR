@@ -275,6 +275,8 @@ export default class CrudService {
                     }
                 }
 
+                if (options.debug) console.log(`CrudService#${Model.name}#update = result =>`, result);
+
                 /**
                  * If a specific DTO format is expected,
                  * convert the result to that format.
