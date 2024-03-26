@@ -32,6 +32,9 @@ export default class ParamsBuilder {
             return acc;
         }, {});
 
+        Object.keys(filteredProps).forEach(key => 
+            filteredProps[key] === undefined && delete filteredProps[key]);
+
         if (prefix) this.outputParams[prefix] = filteredProps;
         else this.outputParams = { ...this.outputParams, ...filteredProps };
 

@@ -254,9 +254,11 @@ export default class CrudService {
                 /**
                  * Update the model with the given properties.
                  */
-                let result = await Model.update(properties,
+                await Model.update(properties,
                     { where: { [foreignKeyName]: foreignKey } }
                 );
+
+                let result;
                 
                 /**
                  * If a responseInclude parameter is provided,
@@ -273,6 +275,8 @@ export default class CrudService {
                             ? result.dataValues[ic.as].map(r=>r.dataValues) 
                             : result.dataValues[ic.as].dataValues;
                     }
+                } else {
+                    result = await Model.findOne({ where: { [foreignKeyName]: foreignKey } });
                 }
 
                 if (options.debug) console.log(`CrudService#${Model.name}#update = result =>`, result);

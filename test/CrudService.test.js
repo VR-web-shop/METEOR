@@ -25,14 +25,6 @@ beforeAll(async () => {
 
     Material.count = () => 1;
     Texture.count = () => 1;
-    Material.update = async (params) => {
-        return new Promise((resolve, reject) => {
-            resolve({ dataValues:{
-                uuid: '00000000-0000-0000-0000-000000000000',
-                name: params.name,
-            }});
-        });
-    }
 })
 
 test('Material should be defined', () => {
@@ -119,12 +111,12 @@ test('CrudService#update when providing no requiredProperties option, everything
     });
     const material = await materialService.update(
         '00000000-0000-0000-0000-000000000000', 
-        { name: 'Material 3' }
+        { name: 'Material' }
     );
 
     expect(material).toBeDefined();
     expect(material.uuid).toBe('00000000-0000-0000-0000-000000000000');
-    expect(material.name).toBe('Material 3');
+    expect(material.name).toBe('Material');
 })
 
 test('CrudService#update should update a material', async () => {
@@ -134,12 +126,12 @@ test('CrudService#update should update a material', async () => {
     });
     const material = await materialService.update(
         '00000000-0000-0000-0000-000000000000', 
-        { name: 'Material 3' }
+        { name: 'Material' }
     );
 
     expect(material).toBeDefined();
     expect(material.uuid).toBe('00000000-0000-0000-0000-000000000000');
-    expect(material.name).toBe('Material 3');
+    expect(material.name).toBe('Material');
 })
 
 test('CrudService#update should throw an error if the required property is not provided', async () => {
