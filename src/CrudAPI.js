@@ -1,3 +1,4 @@
+import CrudAPIUtils from './CrudAPIUtils.js';
 
 /**
  * @class CrudAPI
@@ -144,70 +145,12 @@ export default class CrudAPI {
 
                 let _endpoint = `${getUrl()}?limit=${limit}`;
                 
-                /**
-                 * Parse the where object to a string
-                 */
                 if (where) {
-                    if (typeof where !== 'object') {
-                        throw new Error('Where parameter must be an object.');
-                    }
-
-                    _endpoint += '&where=';
-                    for (let i = 0; i < Object.keys(where).length; i++) {
-                        const key = Object.keys(where)[i];
-                        const value = where[key];
-                        _endpoint += `${key}:${value}`;
-                        
-                        if (i < Object.keys(where).length - 1) {
-                            _endpoint += ',';
-                        }
-                    }
+                    _endpoint += CrudAPIUtils.getWhereString(where, '&where=');
                 }
 
-                /**
-                 * Parse the include array to a string
-                 */
                 if (include) {
-                    if (!Array.isArray(include)) {
-                        throw new Error('Include parameter must be an array.');
-                    }
-
-                    _endpoint += '&include=';
-                    for (let i = 0; i < include.length; i++) {
-
-                        // Check if include is a object
-                        if (typeof include[i] !== 'object') {
-                            throw new Error('Include parameter must be an object.');
-                        }
-
-                        // Check if include has the model property
-                        if (!include[i].model) {
-                            throw new Error('Include parameter must have a model property.');
-                        }
-
-                        _endpoint += include[i].model;
-                        // Check if include has the include property
-                        if (include[i].include) {
-                            _endpoint += '.';
-
-                            // Check if include is an array
-                            if (!Array.isArray(include[i].include)) {
-                                throw new Error('Include parameter must be an array of strings.');
-                            }
-
-                            for (let j = 0; j < include[i].include.length; j++) {
-                                _endpoint += include[i].include[j];
-
-                                if (j < include[i].include.length - 1) {
-                                    _endpoint += ':';
-                                }
-                            }
-                        }
-
-                        if (i < include.length - 1) {
-                            _endpoint += ',';
-                        }
-                    }
+                    _endpoint += CrudAPIUtils.getIncludeString(include, '&include=');
                 }
                 
                 if (page) _endpoint += `&page=${page}`;
@@ -233,6 +176,10 @@ export default class CrudAPI {
                     if (!params[key]) {
                         throw new Error(`No ${key} provided.`);
                     }
+                }
+
+                if (params.responseInclude) {
+                    params.responseInclude = CrudAPIUtils.getIncludeString(params.responseInclude);
                 }
 
                 const body = JSON.stringify(params);
@@ -270,6 +217,10 @@ export default class CrudAPI {
                 const key = params[foreignKeyName];
                 if (!key) {
                     throw new Error(`No ${foreignKeyName} provided.`);
+                }
+
+                if (params.responseInclude) {
+                    params.responseInclude = CrudAPIUtils.getIncludeString(params.responseInclude);
                 }
 
                 const body = JSON.stringify(params);
