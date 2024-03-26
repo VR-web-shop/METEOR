@@ -1,4 +1,4 @@
-import CrudAPI from './CrudAPI.js';
+import CrudAPI, { CrudAPIUtils } from './CrudAPI.js';
 import fs from 'fs';
 
 /**
@@ -34,9 +34,10 @@ const BuildSDK = function(filePath, serverURL, controllers = {}) {
         apis.push({ [key]: data })
     }
 
-    // Convert the CrudAPI class to a string
-    // so it can be included directly in the SDK
+    // Convert the CrudAPI and CrudAPIUtils class to a string
+    // so they can be included directly in the SDK
     const CrudAPIClassString = CrudAPI.toString()
+    const CrudAPIUtilsClassString = CrudAPIUtils.toString()
     
     // Generate a JSON representation of the controllers
     const json = JSON.stringify({apis}, null, 4)
@@ -72,6 +73,8 @@ const BuildSDK = function(filePath, serverURL, controllers = {}) {
      * });
      */
     ${CrudAPIClassString}
+
+    ${CrudAPIUtilsClassString}
 
     /**
      * @constant apis
