@@ -6,5 +6,5 @@ export default {
 		file: './dist/bundle.js',
 		format: 'es'
 	},
-	external: ['express']
+	external: ['express', 'fs']
 };

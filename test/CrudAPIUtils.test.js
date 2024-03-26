@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import CrudAPIUtils from '../src/CrudAPIUtils.js'
+import {CrudAPIUtils} from '../src/CrudAPI.js'
 
 test('CrudAPIUtils should be defined', () => {
     expect(CrudAPIUtils).toBeDefined()
