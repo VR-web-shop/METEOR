@@ -44,7 +44,7 @@ import express from 'express';
  * 
  *      // The association routes that should be allowed for this resource.
  *      // Note: associations can be included in the same findAll route by 
- *      // including {include: 'AssociationName'} in the body. 
+ *      // including {include: {model: 'AssociationName'}} in the body. 
  *      includes: Object[]
  * 
  *      // Specify a DTO to transform the avoid leaking sensitive information
@@ -67,6 +67,9 @@ import express from 'express';
  * 
  *      // If no route is requred, but you still want the service method, add serviceOnly: true
  *      serviceOnly: boolean
+ * 
+ *      // A custom response function that can be used to return a custom response
+ *      customResponse: (entity: any) => any
  *   },
  * 
  *   // Not providing a update options, means neither a route or service method will be generated.
@@ -79,13 +82,16 @@ import express from 'express';
  * 
  *      // The properties that are required to update an entity
  *      // Can just be an empty array for all allowed properties defined in the 'properties'-array.
- *      requiredProperties: string[] 
+ *      requiredProperties: string[],
  * 
  *      // Specify a DTO to transform the avoid leaking sensitive information
  *      dto: { parameter1: string, parameter2: string },
  * 
  *      // If no route is requred, but you still want the service method, add serviceOnly: true
- *      serviceOnly: boolean
+ *      serviceOnly: boolean,
+ * 
+ *      // A custom response function that can be used to return a custom response
+ *      customResponse: (entity: any) => any
  *   },
  * 
  *   // Not providing a delete options, means neither a route or service method will be generated.
@@ -185,6 +191,7 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                         params.where,
                         params.include
                     );
+                    
                     return res.send({ count, pages, rows });
                 } catch (e) {
                     if (e instanceof ApiRequestError) {
@@ -207,7 +214,11 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                             .build();
                     if (options.debug) console.log(`RestController#${sequelizeModel.name}#create = params =>`, params);
                     const entity = await service.create(params.body, params.responseInclude);
-                    return res.send(entity);
+                    
+                    if (options.create.customResponse)
+                        return res.send(options.create.customResponse(entity));
+                    else return res.send(entity);
+
                 } catch (e) {
                     if (e instanceof ApiRequestError) {
                         return res.status(e.status).send(e.message);
@@ -240,7 +251,11 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                         params.body, 
                         params.responseInclude
                     );
-                    return res.send(entity);
+
+                    if (options.update.customResponse)
+                        return res.send(options.update.customResponse(entity));
+                    else return res.send(entity);
+
                 } catch (e) {
                     if (e instanceof ApiRequestError) {
                         return res.status(e.status).send(e.message);

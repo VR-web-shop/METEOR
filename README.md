@@ -105,6 +105,9 @@ const controller = meteor.RestController(endpoint: string, foreign_key_name: str
 
         // If no route is requred, but you still want the service method, add serviceOnly: true
         serviceOnly: boolean
+
+        // A custom response function that can be used to return a custom response
+        customResponse: (entity: any) => any
     },
 
     // Not providing a update options, means neither a route or service method will be generated.
@@ -124,6 +127,9 @@ const controller = meteor.RestController(endpoint: string, foreign_key_name: str
 
         // If no route is requred, but you still want the service method, add serviceOnly: true
         serviceOnly: boolean
+
+        // A custom response function that can be used to return a custom response
+        customResponse: (entity: any) => any
     },
 
     // Not providing a delete options, means neither a route or service method will be generated.
@@ -133,7 +139,10 @@ const controller = meteor.RestController(endpoint: string, foreign_key_name: str
 
         // If no route is requred, but you still want the service method, add serviceOnly: true
         serviceOnly: boolean
-    }
+    },
+
+    // Provide a boolean name debug to get debugging info
+    debug: boolean
 });
 
 // You now have access to an Express router containing the defined routes, a service instance
@@ -247,8 +256,10 @@ const service = new meteor.CrudService(model: SequelizeModel, foreign_key_name: 
     },
 
     // Not providing the destroy option will not create the destroy method
-    delete: boolean
+    delete: boolean,
 
+    // Provide a boolean name debug to get debugging info
+    debug: boolean
 });
 
 ```
