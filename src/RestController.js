@@ -68,6 +68,10 @@ import express from 'express';
  *      // If no route is requred, but you still want the service method, add serviceOnly: true
  *      serviceOnly: boolean
  * 
+ *      // A custom method that can be used to create a custom entity
+ *      // if the default service method is not sufficient
+ *      customMethod: (req, res, params) => any,
+ * 
  *      // A custom response function that can be used to return a custom response
  *      customResponse: (entity: any) => any
  *   },
@@ -89,6 +93,10 @@ import express from 'express';
  * 
  *      // If no route is requred, but you still want the service method, add serviceOnly: true
  *      serviceOnly: boolean,
+ * 
+ *      // A custom method that can be used to create a custom entity
+ *      // if the default service method is not sufficient
+ *      customMethod: (req, res, params) => any,
  * 
  *      // A custom response function that can be used to return a custom response
  *      customResponse: (entity: any) => any
@@ -213,10 +221,16 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                             .filterAssociations(sequelizeModel, 'responseInclude', () => !req.body.responseInclude)
                             .build();
                     if (options.debug) console.log(`RestController#${sequelizeModel.name}#create = params =>`, params);
-                    const entity = await service.create(params.body, params.responseInclude);
                     
+                    let entity;
+                    if (options.create.customMethod) {
+                        entity = await options.create.customMethod(req, res, params);
+                    } else {
+                        entity = await service.create(params.body, params.responseInclude);
+                    }
+
                     if (options.create.customResponse)
-                        return res.send(options.create.customResponse(entity));
+                        return res.send(await options.create.customResponse(entity));
                     else return res.send(entity);
 
                 } catch (e) {
@@ -246,14 +260,16 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                             .filterAssociations(sequelizeModel, 'responseInclude', () => !req.body.responseInclude)
                             .build();
                     if (options.debug) console.log(`RestController#${sequelizeModel.name}#update = params =>`, params);
-                    const entity = await service.update(
-                        params[pkName],
-                        params.body, 
-                        params.responseInclude
-                    );
+
+                    let entity;
+                    if (options.update.customMethod) {
+                        entity = await options.update.customMethod(req, res, params);
+                    } else {
+                        entity = await service.update(params[pkName], params.body, params.responseInclude);
+                    }
 
                     if (options.update.customResponse)
-                        return res.send(options.update.customResponse(entity));
+                        return res.send(await options.update.customResponse(entity));
                     else return res.send(entity);
 
                 } catch (e) {
