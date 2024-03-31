@@ -43,7 +43,7 @@ export default class CrudAPI {
          * @returns {object} The built request options.
          * @example const requestOptions = buildRequestOptions({ method: 'GET' }, true);
          */
-        const buildRequestOptions = async function (requestOptions, useAuth = false, additionalParams={}) {
+        const buildRequestOptions = async function (requestOptions, useAuth = false) {
             if (useAuth) {
                 if (authorizationOptions.storage === 'localStorage') {
                     const token = localStorage.getItem(authorizationOptions.key);
@@ -181,7 +181,7 @@ export default class CrudAPI {
              * @example const record = await create({ name: 'John Doe', email: 'test@example.com' });
              * @example const record = await create({ name: 'John Doe', email: 'test@example.com', responseInclude: ['profile'] });
              */
-            this.create = async function (params, additionalParams = {}) {
+            this.create = async function (params) {
                 for (let key of options.create.properties) {
                     if (!params[key]) {
                         throw new Error(`No ${key} provided.`);
@@ -192,25 +192,14 @@ export default class CrudAPI {
                     params.responseInclude = CrudAPIUtils.getIncludeString(params.responseInclude);
                 }
 
-                const body = new FormData();
-                for (let key of Object.keys(params)) {
-                    body.append(key, params[key]);
-                }
-
-                if (additionalParams.file) {
-                    body.append('file', additionalParams.file);
-                }
-
+                const body = JSON.stringify(params);
                 const requestOptions = await buildRequestOptions({
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'multipart/form-data'
-                        },
-                        body
-                    }, 
-                    options.create.auth,
-                    additionalParams
-                );
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body
+                }, options.create.auth);
                 const response = await fetch(getUrl(), requestOptions);
 
                 const data = await response.json();
