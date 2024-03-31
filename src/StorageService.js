@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand  } from "@aws-sdk/client-s3";
 
 export default class StorageService {
     constructor(endpoint, region, credentials, bucketName, cdnURL, prefix = '') {
@@ -47,7 +47,7 @@ export default class StorageService {
      */
     async updateFile(Body, Key, ACL='public-read') {
         const { Bucket } = this;
-        return this.uploadFile({ Bucket, Key, Body, ACL });
+        return this.upload({ Bucket, Key, Body, ACL });
     }
 
     /**
@@ -60,8 +60,13 @@ export default class StorageService {
     async deleteFile(Key) {
         const { Bucket } = this;
         const params = { Bucket, Key };
-
-        return this.s3.deleteObject(params).promise();
+        const command = new DeleteObjectCommand(params);
+        try {
+            await this.s3.send(command);
+        } catch (error) {
+            console.error("Error deleting file from S3:", error);
+            throw error;
+        }
     }
 
     /**
