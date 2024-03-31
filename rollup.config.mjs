@@ -6,5 +6,5 @@ export default {
 		file: './dist/bundle.js',
 		format: 'es'
 	},
-	external: ['express', 'fs']
+	external: ['express', 'fs', 'multer', '@aws-sdk/client-s3']
 };
