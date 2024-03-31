@@ -347,16 +347,30 @@ export default class CrudService {
             dto: options.findAll.dto
         };
 
-        if (options.create) serviceOptions.create = { 
-            properties: options.create.properties,
-            dto: options.create.dto 
-        };
+        if (options.create) {
+            serviceOptions.create = { 
+                properties: options.create.properties,
+                dto: options.create.dto 
+            };
 
-        if (options.update) serviceOptions.update = { 
-            properties: options.update.properties,
-            requiredProperties: options.update.requiredProperties,
-            dto: options.update.dto
-        };
+            if (options.create.upload) {
+                const fields = options.create.upload.fields
+                serviceOptions.create.properties.push(...fields);
+            }
+        }
+
+        if (options.update) {
+            serviceOptions.update = { 
+                properties: options.update.properties,
+                requiredProperties: options.update.requiredProperties,
+                dto: options.update.dto
+            };
+
+            if (options.update.upload) {
+                const fields = options.update.upload.fields
+                serviceOptions.update.properties.push(...fields);
+            }
+        }
 
         if (options.delete) serviceOptions.delete = true;
         if (options.debug) serviceOptions.debug = true;
