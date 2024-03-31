@@ -26,7 +26,7 @@ export default class StorageService {
         const command = new PutObjectCommand(params);
         try {
             await this.s3.send(command);
-            return `${this.cdnURL}/${keyName}`;
+            return `${this.cdnURL}/${this.prefix}${Key}`;
         } catch (error) {
             console.error("Error uploading file to S3:", error);
             throw error;
