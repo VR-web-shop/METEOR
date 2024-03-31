@@ -1,13 +1,47 @@
 import ApiRequestError from './ApiRequestError.js';
 import ParamsBuilder from './ParamsBuilder.js';
+import StorageService from './StorageService.js';
 
 /**
  * @class CrudService
  * @classdesc A class that generates CRUD services for a given Sequelize model.
  * @example new CrudService(Model, 'uuid', {
+ * 
+ *    // Provide an upload configuration to allow file uploads for the entity.
+ *    upload: {
+ *      // The fields of the record storing the file URL.
+ *      // For example, if the entity has a 'profilePicture' field, 
+ *      // the fields would be ['profilePicture']
+ *      fields: [string],
+ * 
+ *      // Use a custom method to handle the file uploads
+ *      customService: {
+ *          uploadFile: async (file, key) => string_url,
+ *          updateFile: async (file, key) => string_url,
+ *          deleteFile: async (key) => void,
+ *          parseKey: (entity) => string_key
+ *      },
+ * 
+ *      // or use the built-in S3 service to handle the file uploads
+ *      s3: {
+ *          endpoint: string,
+ *          region: string,
+ *          bucketName: string,
+ *          cdnURL: string,
+ *          prefix: string,
+ *          credentials: {
+ *              accessKeyId: string,
+ *              secretAccessKey: string
+ *          } 
+ *      }
+ *    },
+ * 
+ *    // Provide a find configuration to allow finding a single entity.
  *    find: { 
  *      dto: ['uuid', 'name'] 
  *    },
+ * 
+ *    // Provide a findAll configuration to allow finding multiple entities.
  *    findAll: { 
  *      searchProperties: ['name'], 
  *      whereProperties: ['name'],
@@ -15,21 +49,42 @@ import ParamsBuilder from './ParamsBuilder.js';
  *      defaultPage: 1, 
  *      dto: ['uuid', 'name']
  *    },
+ * 
+ *    // Provide a create configuration to allow creating a new entity.
  *    create: {
  *      properties: ['name'],
- *      dto: ['uuid', 'name']
+ *      dto: ['uuid', 'name'],
  *    },
+ * 
+ *    // Provide an update configuration to allow updating an entity.
  *    update: { 
  *      properties: ['name'], 
  *      requiredProperties: ['uuid'],
- *      dto: ['uuid', 'name'] 
+ *      dto: ['uuid', 'name'],
  *    },
+ * 
+ *    // Provide a delete configuration to allow deleting an entity.
  *    delete: true,
+ * 
+ *    // Enable debug mode to log the queries
  *    debug: true
  * });
  */
 export default class CrudService {
     constructor(Model, foreignKeyName = '', options = {}) {
+
+        let storageService;
+        if (options.upload && options.upload.s3) {
+            storageService = new StorageService(
+                options.upload.s3.endpoint,
+                options.upload.s3.region,
+                options.upload.s3.credentials,
+                options.upload.s3.bucketName,
+                options.upload.s3.cdnURL,
+                options.upload.s3.prefix
+            );
+        }
+
         if (options.find) {
 
             /**
@@ -40,7 +95,7 @@ export default class CrudService {
              * @returns {Object} The found model
              * @example const result = await service.find('123', 'association');
              */
-            this.find = async function (pk, include=null) {
+            this.find = async function (pk, include = null) {
                 if (!pk) {
                     throw new ApiRequestError(`No ${foreignKeyName} provided.`, 400);
                 }
@@ -50,9 +105,9 @@ export default class CrudService {
                 if (include) {
                     query.include = include;
                 }
-                
+
                 if (options.debug) console.log(`CrudService#${Model.name}#find = query =>`, query);
-                
+
                 const result = await Model.findOne(query);
                 if (!result) {
                     throw new ApiRequestError(`No ${Model.name} found with ${foreignKeyName} ${pk}.`, 400);
@@ -60,8 +115,8 @@ export default class CrudService {
 
                 if (include && result.dataValues[include]) {
                     result.dataValues[include] = Array.isArray(result.dataValues[include])
-                            ? result.dataValues[include].map(r=>r.dataValues)
-                            : result.dataValues[include].dataValues;
+                        ? result.dataValues[include].map(r => r.dataValues)
+                        : result.dataValues[include].dataValues;
                 }
 
                 /**
@@ -99,7 +154,7 @@ export default class CrudService {
              *   ]
              * );
              */
-            this.findAll = async function (limit, page=1, q=null, where=null, include=null) {
+            this.findAll = async function (limit, page = 1, q = null, where = null, include = null) {
                 const query = {};
 
                 query.limit = parseInt(limit) || options.findAll.defaultLimit || 10;
@@ -143,26 +198,26 @@ export default class CrudService {
                 /**
                  * Format the result to include the count and pages.
                  */
-                const result = { count, pages, rows: rows.map(r=>r.dataValues) };
+                const result = { count, pages, rows: rows.map(r => r.dataValues) };
 
                 if (include) {
                     for (let ic of query.include) {
                         for (let i = 0; i < result.rows.length; i++) {
                             if (Array.isArray(result.rows[i][ic.as])) {
-                                result.rows[i][ic.as] = Array.isArray(result.rows[i][ic.as]) 
-                                    ? result.rows[i][ic.as].map(r=>r.dataValues) 
+                                result.rows[i][ic.as] = Array.isArray(result.rows[i][ic.as])
+                                    ? result.rows[i][ic.as].map(r => r.dataValues)
                                     : result.rows[i][ic.as].dataValues;
                             }
                         }
                     }
                 }
-                
+
                 /**
                  * If a responseInclude parameter is provided,
                  * include the associated models in the response.
                  */
                 if (options.findAll.dto) {
-                    return {count, pages, rows: rows.map(r=>CrudService.arrayToDto(options.findAll.dto, r))};
+                    return { count, pages, rows: rows.map(r => CrudService.arrayToDto(options.findAll.dto, r)) };
                 }
 
                 /**
@@ -185,28 +240,52 @@ export default class CrudService {
              *   [{ model: Model, as: 'Model', include: ['SubAssociation1', 'SubAssociation2']}]
              * );
              */
-            this.create = async function (params={}, responseInclude=null) {
+            this.create = async function (params = {}, responseInclude = null, files = null) {
                 const properties = new ParamsBuilder(params, options.create.properties)
                     .filterProperties(options.create.properties)
                     .build();
-                    
+
                 if (options.debug) console.log(`CrudService#${Model.name}#create = properties =>`, properties);
 
                 let result = await Model.create(properties);
-                
+
+                /**
+                 * If files are provided, upload them to the storage service.
+                 */
+                if (files) {
+                    if (!options.upload) {
+                        throw new ApiRequestError('No upload configuration provided.', 400);
+                    }
+
+                    const foreignKey = `${result.dataValues[foreignKeyName]}`;
+                    const sources = {};
+                    for (let i = 0; i < files.length; i++) {
+                        const key = `${foreignKey}_${files[i].originalname}`;
+                        const file = files[i];
+                        const fileBuffer = file.buffer;
+                        const fileUrl = storageService
+                            ? await storageService.uploadFile(fileBuffer, key)
+                            : await options.upload.customService.uploadFile(file, key);
+                        
+                        
+                        sources[options.upload.fields[i]] = fileUrl;
+                    }
+                    result = await result.update(sources);
+                }
+
                 /**
                  * If a responseInclude parameter is provided,
                  * include the associated models in the response.
                  */
                 if (responseInclude) {
-                    result = await Model.findOne({ 
+                    result = await Model.findOne({
                         where: { [foreignKeyName]: result.dataValues[foreignKeyName] },
-                        include: responseInclude 
+                        include: responseInclude
                     });
 
                     for (let ic of responseInclude) {
-                        result.dataValues[ic.as] = Array.isArray(result.dataValues[ic.as]) 
-                            ? result.dataValues[ic.as].map(r=>r.dataValues) 
+                        result.dataValues[ic.as] = Array.isArray(result.dataValues[ic.as])
+                            ? result.dataValues[ic.as].map(r => r.dataValues)
                             : result.dataValues[ic.as].dataValues;
                     }
                 }
@@ -244,11 +323,11 @@ export default class CrudService {
              *   [{ model: Model, as: 'Model', include: ['SubAssociation1', 'SubAssociation2']}]
              * );
              */
-            this.update = async function (foreignKey='', params={}, responseInclude=null) {
+            this.update = async function (foreignKey = '', params = {}, responseInclude = null, files = null) {
                 const properties = new ParamsBuilder(params, options.update.requiredProperties)
                     .filterProperties(options.update.properties)
                     .build();
-                
+
                 if (options.debug) console.log(`CrudService#${Model.name}#update = properties =>`, properties);
 
                 const entity = await Model.findOne({ where: { [foreignKeyName]: foreignKey } });
@@ -257,20 +336,46 @@ export default class CrudService {
                 }
 
                 let result = await entity.update(properties);
-                
+
+                /**
+                 * If files are provided, upload them to the storage service.
+                 */
+                if (files) {
+                    if (!options.upload) {
+                        throw new ApiRequestError('No upload configuration provided.', 400);
+                    }
+
+                    const sources = {};
+                    for (let i = 0; i < files.length; i++) {  
+                        const field = options.upload.fields[i];                       
+                        const existingKey = storageService
+                            ? storageService.parseKey(result.dataValues[field])
+                            : options.upload.customService.parseKey(result);
+
+                        const file = files[i];
+                        const fileBuffer = file.buffer;
+                        const fileUrl = storageService
+                            ? await storageService.updateFile(fileBuffer, existingKey)
+                            : await options.upload.customService.updateFile(file, existingKey);
+                        
+                        sources[field] = fileUrl;
+                    }
+                    result = await result.update(sources);
+                }
+
                 /**
                  * If a responseInclude parameter is provided,
                  * include the associated models in the response.
                  */
                 if (responseInclude) {
-                    result = await Model.findOne({ 
+                    result = await Model.findOne({
                         where: { [foreignKeyName]: foreignKey },
-                        include: responseInclude 
+                        include: responseInclude
                     });
 
                     for (let ic of responseInclude) {
-                        result.dataValues[ic.as] = Array.isArray(result.dataValues[ic.as]) 
-                            ? result.dataValues[ic.as].map(r=>r.dataValues) 
+                        result.dataValues[ic.as] = Array.isArray(result.dataValues[ic.as])
+                            ? result.dataValues[ic.as].map(r => r.dataValues)
                             : result.dataValues[ic.as].dataValues;
                     }
                 }
@@ -300,14 +405,41 @@ export default class CrudService {
              * @returns {void}
              * @example const result = await service.destroy(123);
              */
-            this.destroy = async function (foreignKey='') {
+            this.destroy = async function (foreignKey = '') {
+                if (!foreignKey) {
+                    throw new ApiRequestError(`No ${foreignKeyName} provided.`, 400);
+                }
+
+                const result = await Model.findOne({ where: { [foreignKeyName]: foreignKey } });
+
+                /**
+                 * If the upload configuration is provided,
+                 * delete the associated files from the storage service.
+                 */
+                if (options.upload) {
+                    for (let i = 0; i < options.upload.fields.length; i++) {
+                        const field = options.upload.fields[i];
+                        const src = result.dataValues[field];
+                        if (!src) continue;
+                                        
+                        const existingKey = storageService
+                            ? storageService.parseKey(src)
+                            : options.upload.customService.parseKey(src);
+
+                        if (storageService) {
+                            await storageService.deleteFile(existingKey);
+                        } else {
+                            await options.upload.customService.deleteFile(existingKey);
+                        }
+                    }
+                }
 
                 if (options.debug) console.log(`CrudService#${Model.name}#destroy = foreignKey =>`, foreignKey);
 
                 /**
                  * Destroy the model with the given primary key.
                  */
-                await Model.destroy({ where: { [foreignKeyName]: foreignKey } });
+                await result.destroy();
             };
         }
     }
@@ -332,8 +464,14 @@ export default class CrudService {
      * @param {Object} options - The service options
      * @returns {Object} The service options
      */
-    static buildOptions(options={}) {
+    static buildOptions(options = {}) {
         const serviceOptions = {}
+
+        if (options.upload) serviceOptions.upload = {
+            fields: options.upload.fields,
+            customService: options.upload.customService,
+            s3: options.upload.s3
+        };
 
         if (options.find) serviceOptions.find = {
             dto: options.find.dto
@@ -348,31 +486,23 @@ export default class CrudService {
         };
 
         if (options.create) {
-            serviceOptions.create = { 
+            serviceOptions.create = {
                 properties: [...options.create.properties],
-                dto: options.create.dto 
+                dto: options.create.dto
             };
-
-            if (options.create.upload) {
-                serviceOptions.create.properties.push(...options.create.upload.fields);
-            }
         }
 
         if (options.update) {
-            serviceOptions.update = { 
+            serviceOptions.update = {
                 properties: [...options.update.properties],
                 requiredProperties: options.update.requiredProperties,
                 dto: options.update.dto
             };
-
-            if (options.update.upload) {
-                serviceOptions.update.properties.push(...options.update.upload.fields);
-            }
         }
 
         if (options.delete) serviceOptions.delete = true;
         if (options.debug) serviceOptions.debug = true;
-        
+
         return serviceOptions;
     }
 }

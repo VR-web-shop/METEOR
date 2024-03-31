@@ -24,15 +24,17 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "multer": "^1.4.5-lts.1",
-    "express": "^4.19.1",
+    "sequelize-mock": "^0.10.2",
     "nodemon": "^3.1.0",
     "rollup": "^4.13.0",
-    "sequelize": "^6.37.1",
-    "sqlite3": "^5.1.7",
     "vitest": "^1.4.0"
   },
   "dependencies": {
-    "sequelize-mock": "^0.10.2"
+    "@aws-sdk/client-s3": "^3.540.0",
+    "@aws-sdk/lib-storage": "^3.540.0",
+    "sqlite3": "^5.1.7",
+    "sequelize": "^6.37.1",
+    "express": "^4.19.1",
+    "multer": "^1.4.5-lts.1"
   }
 }

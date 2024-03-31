@@ -1,6 +1,7 @@
 import CrudAPI from './CrudAPI.js';
 import ApiRequestError from './ApiRequestError.js';
 import CrudService from './CrudService.js';
+import StorageService from './StorageService.js';
 import ParamsBuilder from './ParamsBuilder.js';
 import express from 'express';
 import multer from "multer";
@@ -9,6 +10,35 @@ import multer from "multer";
  * @function RestController
  * @description A class that generates a RESTful controller for a given sequelize model.
  * @example new RestController('/users', 'id', userModel {
+ * 
+ *   // Provide an upload configuration to allow file uploads for the entity.
+ *   upload: {
+ *      // The fields of the record storing the file URL.
+ *      // For example, if the entity has a 'profilePicture' field, 
+ *      // the fields would be ['profilePicture']
+ *      fields: [string],
+ * 
+ *      // Use a custom method to handle the file uploads
+ *      customService: {
+ *          uploadFile: async (file, key) => string_url,
+ *          updateFile: async (file, key) => string_url,
+ *          deleteFile: async (key) => void,
+ *          parseKey: (entity) => string_key
+ *      },
+ * 
+ *      // or use the built-in S3 service to handle the file uploads
+ *      s3: {
+ *          endpoint: string,
+ *          region: string,
+ *          bucketName: string,
+ *          cdnURL: string,
+ *          prefix: string,
+ *          credentials: {
+ *              accessKeyId: string,
+ *              secretAccessKey: string
+ *          } 
+ *      }
+ *   },
  * 
  *   // Not providing a find options, means neither a route or service method will be generated.
  *   find: { 
@@ -63,14 +93,6 @@ import multer from "multer";
  *      // The properties that are required to create a new entity
  *      properties: string[],
  * 
- *      // If the endpoint should accept file uploads, add the fields and a storageService
- *      // to handle the file uploads. The storageService should return a string 
- *      // or an array of strings pointing to the source of the file(s).
- *      upload: {
- *          fields: [string],
- *          storageService: async (file, req) => string_url
- *      },
- * 
  *      // Specify a DTO to transform the avoid leaking sensitive information
  *      dto: { parameter1: string, parameter2: string },
  * 
@@ -82,7 +104,13 @@ import multer from "multer";
  *      customMethod: (req, res, params) => any,
  * 
  *      // A custom response function that can be used to return a custom response
- *      customResponse: (entity: any) => any
+ *      customResponse: (entity: any) => any,
+ * 
+ *      // Hooks that can be used to run custom code before or after the operation
+ *      hooks: {
+ *         before: (req, res, params) => void,
+ *         after: (req, res, params, entity) => void
+ *      },
  *   },
  * 
  *   // Not providing a update options, means neither a route or service method will be generated.
@@ -92,14 +120,6 @@ import multer from "multer";
  * 
  *      // The properties that can be updated
  *      properties: string[], 
- * 
- *      // If the endpoint should accept file uploads, add the fields and a storageService
- *      // to handle the file uploads. The storageService should return a string 
- *      // or an array of strings pointing to the source of the file(s).
- *      upload: {
- *          fields: [string],
- *          storageService: async (file, req) => string_url
- *      },
  * 
  *      // The properties that are required to update an entity
  *      // Can just be an empty array for all allowed properties defined in the 'properties'-array.
@@ -116,7 +136,13 @@ import multer from "multer";
  *      customMethod: (req, res, params) => any,
  * 
  *      // A custom response function that can be used to return a custom response
- *      customResponse: (entity: any) => any
+ *      customResponse: (entity: any) => any,
+ * 
+ *      // Hooks that can be used to run custom code before or after the operation
+ *      hooks: {
+ *         before: (req, res, params) => void,
+ *         after: (req, res, params, entity) => void
+ *      },
  *   },
  * 
  *   // Not providing a delete options, means neither a route or service method will be generated.
@@ -125,13 +151,26 @@ import multer from "multer";
  *      middleware: Function[]
  * 
  *      // If no route is requred, but you still want the service method, add serviceOnly: true
- *      serviceOnly: boolean
+ *      serviceOnly: boolean,
+ * 
+ *      // A custom method that can be used to create a custom entity
+ *      // if the default service method is not sufficient
+ *      customMethod: (req, res, params) => any,
+ * 
+ *      // A custom response function that can be used to return a custom response
+ *      customResponse: () => any,
+ * 
+ *      // Hooks that can be used to run custom code before or after the operation
+ *      hooks: {
+ *         before: (req, res, params) => void,
+ *         after: (req, res, params, foreignKeyValue) => void
+ *      },
  *   },
  * 
  *   debug: boolean
  * });
  */
-function RestController(endpoint, pkName, sequelizeModel, options={}) {
+function RestController(endpoint, pkName, sequelizeModel, options = {}) {
     if (!endpoint) throw new Error('No endpoint provided.');
     if (!pkName) throw new Error('No primary key name provided.');
     if (!sequelizeModel) throw new Error('No sequelizeModel provided.');
@@ -190,13 +229,13 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                         if (!entity) {
                             return res.status(404).send(`No entity found with ${pkName} ${pk}.`);
                         }
-    
+
                         return res.send(entity);
                     } catch (e) {
                         if (e instanceof ApiRequestError) {
                             return res.status(e.status).send(e.message);
                         }
-    
+
                         console.error(e);
                         return res.status(500).send("Internal server error.");
                     }
@@ -205,24 +244,24 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
     }
 
     if (options.findAll && !options.findAll.serviceOnly) {
-        router.route(endpoint)        
+        router.route(endpoint)
             .get(options.findAll.middleware, async (req, res) => {
 
                 try {
                     const params = new ParamsBuilder(req.query)
-                            .filterProperties(['page', 'limit', 'q'])
-                            .filterStringObjectArray('where', 'where', () => !req.query.where)
-                            .filterAssociations(sequelizeModel, 'include', () => !req.query.include)
-                            .build();
+                        .filterProperties(['page', 'limit', 'q'])
+                        .filterStringObjectArray('where', 'where', () => !req.query.where)
+                        .filterAssociations(sequelizeModel, 'include', () => !req.query.include)
+                        .build();
                     if (options.debug) console.log(`RestController#${sequelizeModel.name}#findAll = params =>`, params);
                     const { count, pages, rows } = await service.findAll(
-                        params.limit, 
-                        params.page, 
-                        params.q, 
+                        params.limit,
+                        params.page,
+                        params.q,
                         params.where,
                         params.include
                     );
-                    
+
                     return res.send({ count, pages, rows });
                 } catch (e) {
                     if (e instanceof ApiRequestError) {
@@ -236,34 +275,29 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
     }
 
     if (options.create && !options.create.serviceOnly) {
-        const middleware = options.create.upload 
-            ? [uploadMW.array(options.create.upload.fields), ...options.create.middleware]
-            : options.create.middleware; 
+        const middleware = options.upload
+            ? [uploadMW.array(options.upload.fields), ...options.create.middleware]
+            : options.create.middleware;
 
-        router.route(endpoint)    
+        router.route(endpoint)
             .post(middleware, async (req, res) => {
                 try {
                     const params = new ParamsBuilder(req.body, options.create.properties)
-                            .filterProperties(options.create.properties, 'body')
-                            .filterAssociations(sequelizeModel, 'responseInclude', () => !req.body.responseInclude)
-                            .build();
-                    
-                    if (options.create.upload) {
-                        for (let i = 0; i < req.files.length; i++) {
-                            const file = req.files[i];
-                            const fileUrl = await options.create.upload.storageService(file, req);
-                            params.body[options.create.upload.fields[i]] = fileUrl;
-                        }
-                    }
+                        .filterProperties(options.create.properties, 'body')
+                        .filterAssociations(sequelizeModel, 'responseInclude', () => !req.body.responseInclude)
+                        .build();
 
+                    if (options.create.hooks && options.create.hooks.before) options.create.hooks.before(req, res, params);
                     if (options.debug) console.log(`RestController#${sequelizeModel.name}#create = params =>`, params);
 
                     let entity;
                     if (options.create.customMethod) {
                         entity = await options.create.customMethod(req, res, params);
                     } else {
-                        entity = await service.create(params.body, params.responseInclude);
+                        entity = await service.create(params.body, params.responseInclude, req.files);
                     }
+
+                    if (options.create.hooks && options.create.hooks.after) options.create.hooks.after(req, res, params, entity);
 
                     if (options.create.customResponse)
                         return res.send(await options.create.customResponse(entity));
@@ -281,41 +315,36 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
     }
 
     if (options.update && !options.update.serviceOnly) {
-        const middleware = options.update.upload 
-            ? [uploadMW.array(options.update.upload.fields), ...options.update.middleware]
-            : options.update.middleware; 
+        const middleware = options.upload
+            ? [uploadMW.array(options.upload.fields), ...options.update.middleware]
+            : options.update.middleware;
 
-        router.route(endpoint)  
+        router.route(endpoint)
             .put(middleware, async (req, res) => {
                 try {
                     const required = [pkName];
-                    
+
                     if (options.update.requiredProperties) {
                         required.push(...options.update.requiredProperties);
                     }
 
                     const params = new ParamsBuilder(req.body, required)
-                            .filterProperties([pkName])
-                            .filterProperties(options.update.properties, 'body')
-                            .filterAssociations(sequelizeModel, 'responseInclude', () => !req.body.responseInclude)
-                            .build();
+                        .filterProperties([pkName])
+                        .filterProperties(options.update.properties, 'body')
+                        .filterAssociations(sequelizeModel, 'responseInclude', () => !req.body.responseInclude)
+                        .build();
 
-                    if (options.update.upload) {
-                        for (let i = 0; i < req.files.length; i++) {
-                            const file = req.files[i];
-                            const fileUrl = await options.update.upload.storageService(file, req);
-                            params.body[options.update.upload.fields[i]] = fileUrl;
-                        }
-                    }
-
+                    if (options.update.hooks && options.update.hooks.before) options.update.hooks.before(req, res, params);
                     if (options.debug) console.log(`RestController#${sequelizeModel.name}#update = params =>`, params);
 
                     let entity;
                     if (options.update.customMethod) {
                         entity = await options.update.customMethod(req, res, params);
                     } else {
-                        entity = await service.update(params[pkName], params.body, params.responseInclude);
+                        entity = await service.update(params[pkName], params.body, params.responseInclude, req.files);
                     }
+
+                    if (options.update.hooks && options.update.hooks.after) options.update.hooks.after(req, res, params, entity);
 
                     if (options.update.customResponse)
                         return res.send(await options.update.customResponse(entity));
@@ -333,15 +362,27 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
     }
 
     if (options.delete && !options.delete.serviceOnly) {
-        router.route(endpoint)  
+        router.route(endpoint)
             .delete(options.delete.middleware, async (req, res) => {
                 try {
                     const params = new ParamsBuilder(req.body, [pkName])
                         .filterProperties([pkName])
                         .build();
+
+                    if (options.delete.hooks && options.delete.hooks.before) options.delete.hooks.before(req, res, params);
                     if (options.debug) console.log(`RestController#${sequelizeModel.name}#delete = params =>`, params);
-                    await service.destroy(params[pkName]);
-                    return res.sendStatus(204);
+                    
+                    if (options.delete.customMethod) {
+                        await options.delete.customMethod(req, res, params);
+                    } else {
+                        await service.destroy(params[pkName]);
+                    }
+
+                    if (options.delete.hooks && options.delete.hooks.after) options.delete.hooks.after(req, res, params, params[pkName]);
+                    
+                    if (options.delete.customResponse)
+                        return res.send(await options.delete.customResponse());
+                    else return res.sendStatus(204);
                 } catch (e) {
                     if (e instanceof ApiRequestError) {
                         return res.status(e.status).send(e.message);
@@ -362,12 +403,12 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
      * @example const api = generateCrudAPI('http://localhost:3000', { storage: 'localStorage', key: 'auth' });
      * @example const api = generateCrudAPI('http://localhost:3000', { storage: 'memory', token: 'YOUR_TOKEN' });
      */
-    const generateCrudAPI = (serverURL, authorization=null) => {
+    const generateCrudAPI = (serverURL, authorization = null) => {
         const apiOptions = CrudAPI.buildOptions({ authorization, ...options }, authorization !== null);
         return new CrudAPI(serverURL, endpoint, pkName, apiOptions);
     }
 
-    return {router, service, generateCrudAPI};
+    return { router, service, generateCrudAPI };
 }
 
 export default RestController;

@@ -45,105 +45,170 @@ The method depends returns an `Express Router` object, a `CrudService` object (I
 ```js
 import meteor from "@vr-web-shop/meteor";
 
-const controller = meteor.RestController(endpoint: string, foreign_key_name: string, model: SequelizeModel, {
-    
-    // Not providing a find options, means neither a route or service method will be generated.
-    find: { 
-        // The middleware applied to the find route
-        middleware: Function[], 
-
-        // The association routes that should be allowed for this resource 
-        // (fx /user/:id/AssociationName - returns both user and association)
-        includes: [{ endpoint: string, model: string }],
-
-        // Specify a DTO to transform the avoid leaking sensitive information
-        dto: { parameter1: string, parameter2: string },
-
-        // If no route is requred, but you still want the service method, add serviceOnly: true
-        serviceOnly: boolean
-    },
-
-    // Not providing a findAll options, means neither a route or service method will be generated.
-    findAll: { 
-        // The middleware applied to the findAll route
-        middleware: Function[], 
-
-        // The properties that should be searchable
-        searchProperties: string[],
-
-        // The properties that should be allowed to use 'WHERE' to find
+/**
+ * @function RestController
+ * @example new RestController('/users', 'id', userModel {
+ * 
+ *   // Provide an upload configuration to allow file uploads for the entity.
+ *   upload: {
+ *      // The fields of the record storing the file URL.
+ *      // For example, if the entity has a 'profilePicture' field, 
+ *      // the fields would be ['profilePicture']
+ *      fields: [string],
+ * 
+ *      // Use a custom method to handle the file uploads
+ *      customService: {
+ *          uploadFile: async (file, key) => string_url,
+ *          updateFile: async (file, key) => string_url,
+ *          deleteFile: async (key) => void,
+ *          parseKey: (entity) => string_key
+ *      },
+ * 
+ *      // or use the built-in S3 service to handle the file uploads
+ *      s3: {
+ *          endpoint: string,
+ *          region: string,
+ *          bucketName: string,
+ *          cdnURL: string,
+ *          prefix: string,
+ *          credentials: {
+ *              accessKeyId: string,
+ *              secretAccessKey: string
+ *          } 
+ *      }
+ *   },
+ * 
+ *   // Not providing a find options, means neither a route or service method will be generated.
+ *   find: { 
+ *      // The middleware applied to the find route
+ *      middleware: Function[], 
+ * 
+ *      // The association routes that should be allowed for this resource 
+ *      // (fx /user/:id/AssociationName - returns both user and association)
+ *      includes: [{ endpoint: string, model: string }],
+ * 
+ *      // Specify a DTO to transform the avoid leaking sensitive information
+ *      dto: { parameter1: string, parameter2: string },
+ * 
+ *      // If no route is requred, but you still want the service method, add serviceOnly: true
+ *      serviceOnly: boolean
+ *   },
+ * 
+ *   // Not providing a findAll options, means neither a route or service method will be generated.
+ *   findAll: { 
+ *      // The middleware applied to the findAll route
+ *      middleware: Function[], 
+ * 
+ *      // The properties that should be searchable
+ *      searchProperties: string[],
+ * 
+ *      // The properties that should be allowed to use 'WHERE' to find
         whereProperties: string[],
-
-        // The default limit for the findAll route
-        defaultLimit: number,
-
-        // The default page for the findAll route
-        defaultPage: number,
-
-        // The association routes that should be allowed for this resource.
-        // Note: associations can be included in the same findAll route by 
-        // including {include: 'AssociationName'} in the body. 
-        includes: string[]
-
-        // Specify a DTO to transform the avoid leaking sensitive information
-        dto: { parameter1: string, parameter2: string },
-
-        // If no route is requred, but you still want the service method, add serviceOnly: true
-        serviceOnly: boolean
-    },
-
-    // Not providing a create options, means neither a route or service method will be generated.
-    create: { 
-        // The middleware applied to the create route
-        middleware: Function[],
-
-        // The properties that are required to create a new entity
-        properties: string[],
-
-        // Specify a DTO to transform the avoid leaking sensitive information
-        dto: { parameter1: string, parameter2: string },
-
-        // If no route is requred, but you still want the service method, add serviceOnly: true
-        serviceOnly: boolean
-
-        // A custom response function that can be used to return a custom response
-        customResponse: (entity: any) => any
-    },
-
-    // Not providing a update options, means neither a route or service method will be generated.
-    update: { 
-        // The middleware applied to the update route
-        middleware: Function[],
-
-        // The properties that can be updated
-        properties: string[], 
-
-        // The properties that are required to update an entity
-        // Can just be an empty array for all allowed properties defined in the 'properties'-array.
-        requiredProperties: string[],
-
-        // Specify a DTO to transform the avoid leaking sensitive information
-        dto: { parameter1: string, parameter2: string },
-
-        // If no route is requred, but you still want the service method, add serviceOnly: true
-        serviceOnly: boolean
-
-        // A custom response function that can be used to return a custom response
-        customResponse: (entity: any) => any
-    },
-
-    // Not providing a delete options, means neither a route or service method will be generated.
-    delete: { 
-        // The middleware applied to the delete route
-        middleware: Function[],
-
-        // If no route is requred, but you still want the service method, add serviceOnly: true
-        serviceOnly: boolean
-    },
-
-    // Provide a boolean name debug to get debugging info
-    debug: boolean
-});
+ * 
+ *      // The default limit for the findAll route
+ *      defaultLimit: number,
+ * 
+ *      // The default page for the findAll route
+ *      defaultPage: number,
+ * 
+ *      // The association routes that should be allowed for this resource.
+ *      // Note: associations can be included in the same findAll route by 
+ *      // including {include: {model: 'AssociationName'}} in the body. 
+ *      includes: Object[]
+ * 
+ *      // Specify a DTO to transform the avoid leaking sensitive information
+ *      dto: { parameter1: string, parameter2: string },
+ * 
+ *      // If no route is requred, but you still want the service method, add serviceOnly: true
+ *      serviceOnly: boolean
+ *   },
+ * 
+ *   // Not providing a create options, means neither a route or service method will be generated.
+ *   create: { 
+ *      // The middleware applied to the create route
+ *      middleware: Function[],
+ *    
+ *      // The properties that are required to create a new entity
+ *      properties: string[],
+ * 
+ *      // Specify a DTO to transform the avoid leaking sensitive information
+ *      dto: { parameter1: string, parameter2: string },
+ * 
+ *      // If no route is requred, but you still want the service method, add serviceOnly: true
+ *      serviceOnly: boolean
+ * 
+ *      // A custom method that can be used to create a custom entity
+ *      // if the default service method is not sufficient
+ *      customMethod: (req, res, params) => any,
+ * 
+ *      // A custom response function that can be used to return a custom response
+ *      customResponse: (entity: any) => any,
+ * 
+ *      // Hooks that can be used to run custom code before or after the operation
+ *      hooks: {
+ *         before: (req, res, params) => void,
+ *         after: (req, res, params, entity) => void
+ *      },
+ *   },
+ * 
+ *   // Not providing a update options, means neither a route or service method will be generated.
+ *   update: { 
+ *      // The middleware applied to the update route
+ *      middleware: Function[],
+ * 
+ *      // The properties that can be updated
+ *      properties: string[], 
+ * 
+ *      // The properties that are required to update an entity
+ *      // Can just be an empty array for all allowed properties defined in the 'properties'-array.
+ *      requiredProperties: string[],
+ * 
+ *      // Specify a DTO to transform the avoid leaking sensitive information
+ *      dto: { parameter1: string, parameter2: string },
+ * 
+ *      // If no route is requred, but you still want the service method, add serviceOnly: true
+ *      serviceOnly: boolean,
+ * 
+ *      // A custom method that can be used to create a custom entity
+ *      // if the default service method is not sufficient
+ *      customMethod: (req, res, params) => any,
+ * 
+ *      // A custom response function that can be used to return a custom response
+ *      customResponse: (entity: any) => any,
+ * 
+ *      // Hooks that can be used to run custom code before or after the operation
+ *      hooks: {
+ *         before: (req, res, params) => void,
+ *         after: (req, res, params, entity) => void
+ *      },
+ *   },
+ * 
+ *   // Not providing a delete options, means neither a route or service method will be generated.
+ *   delete: { 
+ *      // The middleware applied to the delete route
+ *      middleware: Function[]
+ * 
+ *      // If no route is requred, but you still want the service method, add serviceOnly: true
+ *      serviceOnly: boolean,
+ * 
+ *      // A custom method that can be used to create a custom entity
+ *      // if the default service method is not sufficient
+ *      customMethod: (req, res, params) => any,
+ * 
+ *      // A custom response function that can be used to return a custom response
+ *      customResponse: () => any,
+ * 
+ *      // Hooks that can be used to run custom code before or after the operation
+ *      hooks: {
+ *         before: (req, res, params) => void,
+ *         after: (req, res, params, foreignKeyValue) => void
+ *      },
+ *   },
+ * 
+ *   debug: boolean
+ * });
+ */
+const controller = meteor.RestController(endpoint: string, foreign_key_name: string, model: SequelizeModel, options: Object);
 
 // You now have access to an Express router containing the defined routes, a service instance
 // where you can call the methods directly without using the API routes, and a method to
