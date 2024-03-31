@@ -3,6 +3,7 @@ import { DataTypes } from 'sequelize';
 import SQLite from 'sqlite3';
 import CrudService from '../src/CrudService.js';
 import ParamsBuilder from '../src/ParamsBuilder.js';
+import RestController from '../src/RestController.js';
 
 const sequelize = new Sequelize('database', 'username', 'password', {
     dialect: 'sqlite',
@@ -13,6 +14,7 @@ const sequelize = new Sequelize('database', 'username', 'password', {
         mode: SQLite.OPEN_READWRITE | SQLite.OPEN_CREATE | SQLite.OPEN_FULLMUTEX,
     },
 });
+
 
 
 const options = { underscored: true, createdAt: 'created', updatedAt: 'updated' };
@@ -266,16 +268,6 @@ try {
 
     console.log('delete matparams', await matService.destroy(matDeleteparams.uuid));
 
-    /*
-        const matType = await matTypeService.create({});
-        const texType = await texTypeService.create({});
-        const tex = await textService.create({ texture_type_uuid: texType.uuid });
-        const img = await imageService.create({ texture_uuid: tex.uuid });
-        const mat = await matService.create({ uuid: '1234', material_type_uuid: matType.uuid });
-    
-        await MaterialTexture.create({material_uuid: mat.uuid, texture_uuid: tex.uuid});
-        const all = await matService.findAll({q: 'a9'}, { include: 'Texture.TextureType:Images,MaterialType' });
-        console.log(JSON.stringify(all, null, 2));*/
 
     console.log('Connection has been established successfully.');
 } catch (error) {
