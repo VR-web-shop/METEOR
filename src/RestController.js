@@ -142,6 +142,11 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
     const service = new CrudService(sequelizeModel, pkName, serviceOptions)
     const router = express.Router();
 
+    if (options.debug) {
+        console.log(`RestController#${sequelizeModel.name}#options =`, options);
+        console.log(`RestController#${sequelizeModel.name}#serviceOptions =`, serviceOptions);
+    }
+
     if (options.find && !options.find.serviceOnly) {
         router.route(`${endpoint}/:${pkName}`)
             .get(options.find.middleware, async (req, res) => {
