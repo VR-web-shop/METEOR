@@ -12,6 +12,17 @@ export default class StorageService {
         });
     }
 
+    async upload(params) {
+        const command = new PutObjectCommand(params);
+        try {
+            await this.s3.send(command);
+            return `${this.cdnURL}/${params.Key}`;
+        } catch (error) {
+            console.error("Error uploading file to S3:", error);
+            throw error;
+        }
+    }
+
     /**
      * @function uploadFile
      * @description Upload a file to an S3 bucket.
@@ -21,16 +32,8 @@ export default class StorageService {
      * @throws {Error} - The error.
      */
     async uploadFile(Body, Key, ACL='public-read') {
-        const { Bucket } = this;
-        const params = { Bucket, Key: `${this.prefix}${Key}`, Body, ACL };
-        const command = new PutObjectCommand(params);
-        try {
-            await this.s3.send(command);
-            return `${this.cdnURL}/${this.prefix}${Key}`;
-        } catch (error) {
-            console.error("Error uploading file to S3:", error);
-            throw error;
-        }
+        const { Bucket, prefix } = this;
+        return this.upload({ Bucket, Key: `${prefix}${Key}`, Body, ACL });
     }
 
 
@@ -43,7 +46,8 @@ export default class StorageService {
      * @throws {Error} - The error.
      */
     async updateFile(Body, Key, ACL='public-read') {
-        return this.uploadFile(Body, Key, ACL);
+        const { Bucket } = this;
+        return this.uploadFile({ Bucket, Key, Body, ACL });
     }
 
     /**
@@ -55,7 +59,7 @@ export default class StorageService {
      */
     async deleteFile(Key) {
         const { Bucket } = this;
-        const params = { Bucket, Key: `${this.prefix}${Key}` };
+        const params = { Bucket, Key };
 
         return this.s3.deleteObject(params).promise();
     }
