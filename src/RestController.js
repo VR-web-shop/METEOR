@@ -247,7 +247,7 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                         for (let i = 0; i < req.files.length; i++) {
                             const file = req.files[i];
                             const fileUrl = await options.create.upload.storageService(file, req);
-                            params.body[options.create.upload.fields[i]] = fileUrl;
+                            params[options.create.upload.fields[i]] = fileUrl;
                         }
                     }
 
@@ -299,7 +299,7 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                         for (let i = 0; i < req.files.length; i++) {
                             const file = req.files[i];
                             const fileUrl = await options.update.upload.storageService(file, req);
-                            params.body[options.update.upload.fields[i]] = fileUrl;
+                            params[options.update.upload.fields[i]] = fileUrl;
                         }
                     }
 
