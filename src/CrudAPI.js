@@ -192,16 +192,19 @@ export default class CrudAPI {
                     params.responseInclude = CrudAPIUtils.getIncludeString(params.responseInclude);
                 }
 
-                const body = JSON.stringify(params);
-                const requestOptions = await buildRequestOptions({
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body
-                }, options.create.auth);
-                const response = await fetch(getUrl(), requestOptions);
+                const requestOptions = await buildRequestOptions(
+                    { method: 'POST', headers: {} }, 
+                    options.create.auth
+                );
 
+                if (params instanceof FormData) {
+                    requestOptions.body = params;
+                } else {
+                    requestOptions.body = JSON.stringify(params);
+                    requestOptions.headers['Content-Type'] = 'application/json';
+                }
+          
+                const response = await fetch(getUrl(), requestOptions);
                 const data = await response.json();
                 return data;
             };
@@ -234,14 +237,18 @@ export default class CrudAPI {
                     params.responseInclude = CrudAPIUtils.getIncludeString(params.responseInclude);
                 }
 
-                const body = JSON.stringify(params);
-                const requestOptions = await buildRequestOptions({
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body
-                }, options.update.auth);
+                const requestOptions = await buildRequestOptions(
+                    { method: 'PUT', headers: {} }, 
+                    options.update.auth
+                );
+
+                if (params instanceof FormData) {
+                    requestOptions.body = params;
+                } else {
+                    requestOptions.body = JSON.stringify(params);
+                    requestOptions.headers['Content-Type'] = 'application/json';
+                }
+
                 const response = await fetch(getUrl(), requestOptions);
                 const data = await response.json();
                 return data;

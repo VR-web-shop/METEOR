@@ -3,6 +3,7 @@ import ApiRequestError from './ApiRequestError.js';
 import CrudService from './CrudService.js';
 import ParamsBuilder from './ParamsBuilder.js';
 import express from 'express';
+import multer from "multer";
 
 /**
  * @function RestController
@@ -60,7 +61,15 @@ import express from 'express';
  *      middleware: Function[],
  *    
  *      // The properties that are required to create a new entity
- *      properties: string[] 
+ *      properties: string[],
+ * 
+ *      // If the endpoint should accept file uploads, add the fields and a storageService
+ *      // to handle the file uploads. The storageService should return a string 
+ *      // or an array of strings pointing to the source of the file(s).
+ *      upload: {
+ *          fields: [string],
+ *          storageService: (file, req) => string_url
+ *      },
  * 
  *      // Specify a DTO to transform the avoid leaking sensitive information
  *      dto: { parameter1: string, parameter2: string },
@@ -83,6 +92,14 @@ import express from 'express';
  * 
  *      // The properties that can be updated
  *      properties: string[], 
+ * 
+ *      // If the endpoint should accept file uploads, add the fields and a storageService
+ *      // to handle the file uploads. The storageService should return a string 
+ *      // or an array of strings pointing to the source of the file(s).
+ *      upload: {
+ *          fields: [string],
+ *          storageService: (file, req) => string_url
+ *      },
  * 
  *      // The properties that are required to update an entity
  *      // Can just be an empty array for all allowed properties defined in the 'properties'-array.
@@ -120,6 +137,7 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
     if (!sequelizeModel) throw new Error('No sequelizeModel provided.');
     if (!options) throw new Error('No options provided.');
 
+    const uploadMW = multer({ storage: multer.memoryStorage() })
     const serviceOptions = CrudService.buildOptions(options);
     const service = new CrudService(sequelizeModel, pkName, serviceOptions)
     const router = express.Router();
@@ -213,15 +231,28 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
     }
 
     if (options.create && !options.create.serviceOnly) {
+        const middleware = options.create.upload 
+            ? [uploadMW.array(options.create.upload.fields), ...options.create.middleware]
+            : options.create.middleware; 
+
         router.route(endpoint)    
-            .post(options.create.middleware, async (req, res) => {
+            .post(middleware, async (req, res) => {
                 try {
                     const params = new ParamsBuilder(req.body, options.create.properties)
                             .filterProperties(options.create.properties, 'body')
                             .filterAssociations(sequelizeModel, 'responseInclude', () => !req.body.responseInclude)
                             .build();
-                    if (options.debug) console.log(`RestController#${sequelizeModel.name}#create = params =>`, params);
                     
+                    if (options.create.upload) {
+                        for (let i = 0; i < req.files.length; i++) {
+                            const file = req.files[i];
+                            const fileUrl = options.create.upload.storageService(file, req);
+                            params.body[options.create.upload.fields[i]] = fileUrl;
+                        }
+                    }
+
+                    if (options.debug) console.log(`RestController#${sequelizeModel.name}#create = params =>`, params);
+
                     let entity;
                     if (options.create.customMethod) {
                         entity = await options.create.customMethod(req, res, params);
@@ -245,8 +276,12 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
     }
 
     if (options.update && !options.update.serviceOnly) {
+        const middleware = options.update.upload 
+            ? [uploadMW.array(options.update.upload.fields), ...options.update.middleware]
+            : options.update.middleware; 
+
         router.route(endpoint)  
-            .put(options.update.middleware, async (req, res) => {
+            .put(middleware, async (req, res) => {
                 try {
                     const required = [pkName];
                     
@@ -259,6 +294,15 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                             .filterProperties(options.update.properties, 'body')
                             .filterAssociations(sequelizeModel, 'responseInclude', () => !req.body.responseInclude)
                             .build();
+
+                    if (options.update.upload) {
+                        for (let i = 0; i < req.files.length; i++) {
+                            const file = req.files[i];
+                            const fileUrl = options.update.upload.storageService(file, req);
+                            params.body[options.update.upload.fields[i]] = fileUrl;
+                        }
+                    }
+
                     if (options.debug) console.log(`RestController#${sequelizeModel.name}#update = params =>`, params);
 
                     let entity;
