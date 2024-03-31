@@ -68,7 +68,7 @@ import multer from "multer";
  *      // or an array of strings pointing to the source of the file(s).
  *      upload: {
  *          fields: [string],
- *          storageService: (file, req) => string_url
+ *          storageService: async (file, req) => string_url
  *      },
  * 
  *      // Specify a DTO to transform the avoid leaking sensitive information
@@ -98,7 +98,7 @@ import multer from "multer";
  *      // or an array of strings pointing to the source of the file(s).
  *      upload: {
  *          fields: [string],
- *          storageService: (file, req) => string_url
+ *          storageService: async (file, req) => string_url
  *      },
  * 
  *      // The properties that are required to update an entity
@@ -246,7 +246,7 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                     if (options.create.upload) {
                         for (let i = 0; i < req.files.length; i++) {
                             const file = req.files[i];
-                            const fileUrl = options.create.upload.storageService(file, req);
+                            const fileUrl = await options.create.upload.storageService(file, req);
                             params.body[options.create.upload.fields[i]] = fileUrl;
                         }
                     }
@@ -298,7 +298,7 @@ function RestController(endpoint, pkName, sequelizeModel, options={}) {
                     if (options.update.upload) {
                         for (let i = 0; i < req.files.length; i++) {
                             const file = req.files[i];
-                            const fileUrl = options.update.upload.storageService(file, req);
+                            const fileUrl = await options.update.upload.storageService(file, req);
                             params.body[options.update.upload.fields[i]] = fileUrl;
                         }
                     }
