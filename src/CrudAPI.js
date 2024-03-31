@@ -182,14 +182,20 @@ export default class CrudAPI {
              * @example const record = await create({ name: 'John Doe', email: 'test@example.com', responseInclude: ['profile'] });
              */
             this.create = async function (params) {
+                const isFormData = params instanceof FormData;
+
                 for (let key of options.create.properties) {
-                    if (!params[key]) {
+                    const val = isFormData ? params.get(key) : params[key];
+                    if (!val) {
                         throw new Error(`No ${key} provided.`);
                     }
                 }
 
-                if (params.responseInclude) {
-                    params.responseInclude = CrudAPIUtils.getIncludeString(params.responseInclude);
+                const responseInclude = isFormData ? params.get('responseInclude') : params.responseInclude;
+                if (responseInclude) {
+                    const val = CrudAPIUtils.getIncludeString(responseInclude);
+                    if (isFormData) params.set('responseInclude', val);
+                    else params.responseInclude = val;
                 }
 
                 const requestOptions = await buildRequestOptions(
@@ -220,21 +226,27 @@ export default class CrudAPI {
              * @example const record = await update({ id: 1, name: 'Jane Doe', email: 'test2@example.com', responseInclude: ['profile'] });
              */
             this.update = async function (params) {
+                const isFormData = params instanceof FormData;
+
                 if (options.update.requiredProperties) {
                     for (let key of options.update.requiredProperties) {
-                        if (!params[key]) {
+                        const val = isFormData ? params.get(key) : params[key];
+                        if (!val) {
                             throw new Error(`No ${key} provided.`);
                         }
                     }
                 }
 
-                const key = params[foreignKeyName];
+                const key = isFormData ? params.get(foreignKeyName) : params[foreignKeyName];
                 if (!key) {
                     throw new Error(`No ${foreignKeyName} provided.`);
                 }
 
-                if (params.responseInclude) {
-                    params.responseInclude = CrudAPIUtils.getIncludeString(params.responseInclude);
+                const responseInclude = isFormData ? params.get('responseInclude') : params.responseInclude;
+                if (responseInclude) {
+                    const val = CrudAPIUtils.getIncludeString(responseInclude);
+                    if (isFormData) params.set('responseInclude', val);
+                    else params.responseInclude = val;
                 }
 
                 const requestOptions = await buildRequestOptions(
