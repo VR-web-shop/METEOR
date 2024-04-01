@@ -135,11 +135,30 @@ const BuildSDK = function(filePath, serverURL, controllers = {}, authorization=n
         console.log(`Writing SDK to ${filePath}`)
     }
 
-    fs.writeFileSync(filePath, sdk)
-
-    if (debug) {
-        console.log(`SDK written to ${filePath}`)
-    }
+    fs.open(filePath, 'w', (err, fd) => {
+        if (err) {
+            console.error('Error opening file:', err);
+            return;
+        }
+    
+        const data = sdk;
+    
+        fs.writeFile(fd, data, (err) => {
+            if (err) {
+                console.error('Error writing to file:', err);
+            } else {
+                console.log(`SDK written to ${filePath}`)
+            }
+    
+            fs.close(fd, (err) => {
+                if (err) {
+                    console.error('Error closing file:', err);
+                } else {
+                    console.log('File closed successfully');
+                }
+            });
+        });
+    });
 }
 
 export default BuildSDK
