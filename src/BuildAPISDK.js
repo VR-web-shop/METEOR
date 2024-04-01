@@ -22,7 +22,7 @@ import fs from 'fs';
  *  storage: 'memory', token: 'YOUR_TOKEN'
  * })
  */
-const BuildSDK = function(filePath, serverURL, controllers = {}, authorization=null) {
+const BuildSDK = function(filePath, serverURL, controllers = {}, authorization=null, debug=false) {
     if (!filePath) {
         throw new Error('filePath is required');
     }
@@ -44,10 +44,13 @@ const BuildSDK = function(filePath, serverURL, controllers = {}, authorization=n
         apis.push({ [key]: data })
     }
 
+    
+
     // Convert the CrudAPI and CrudAPIUtils class to a string
     // so they can be included directly in the SDK
     const CrudAPIClassString = CrudAPI.toString()
     const CrudAPIUtilsClassString = CrudAPIUtils.toString()
+    
     
     // Generate a JSON representation of the controllers
     const json = JSON.stringify({apis}, null, 4)
@@ -124,7 +127,19 @@ const BuildSDK = function(filePath, serverURL, controllers = {}, authorization=n
     export default SDK
     `
 
+    if (debug) {
+        console.log(`BuildSDK: ${filePath}`)
+        console.log(`BuildSDK: ${serverURL}`)
+        console.log(`BuildSDK: ${json}`)
+        console.log(`BuildSDK: ${sdk}`)
+        console.log(`Writing SDK to ${filePath}`)
+    }
+
     fs.writeFileSync(filePath, sdk)
+
+    if (debug) {
+        console.log(`SDK written to ${filePath}`)
+    }
 }
 
 export default BuildSDK
